@@ -1,4 +1,4 @@
-import scapy
+from scapy.all import rdpcap
 import os
 
 class Dataset:
@@ -51,7 +51,7 @@ class Dataset:
         Returns:
             str: The path of the processed file
         """
-        packets = scapy.rdpcap(file_path)
+        packets = rdpcap(file_path)
         txt_file_path = file_path.replace('.pcap', '.txt').replace('.pcapng', '.txt').replace('.cap', '.txt')
         with open(txt_file_path, 'w') as f:
             for packet in packets:
