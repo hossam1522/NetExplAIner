@@ -27,7 +27,7 @@ class Dataset:
 
         return net_files
 
-    def process_files(self):
+    def process_files(self) -> list:
         """
         Process the files in the path and convert them to txt format in the same path
 
@@ -52,7 +52,7 @@ class Dataset:
             str: The path of the processed file
         """
         packets = rdpcap(file_path)
-        txt_file_path = file_path.replace('.pcap', '.txt').replace('.pcapng', '.txt').replace('.cap', '.txt')
+        txt_file_path = file_path.replace('.pcapng', '.txt').replace('.pcap', '.txt').replace('.cap', '.txt')
         with open(txt_file_path, 'w') as f:
             for packet in packets:
                 f.write(str(packet) + '\n')

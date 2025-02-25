@@ -1,25 +1,79 @@
-from unittest.mock import patch, MagicMock, call
+import unittest
+import os
+from unittest.mock import patch, mock_open
 from netexplainer.dataset import Dataset
 
-def test_dataset():
-    with patch('os.listdir') as mock_listdir, \
-         patch('scapy.all.rdpcap') as mock_rdpcap, \
-         patch('builtins.open', create=True) as mock_open:
-        
-        # Configure the mocks
-        mock_rdpcap.return_value = MagicMock()
-        mock_listdir.return_value = ['file1.pcap', 'file2.pcapng', 'file3.cap', 'file4.txt']
-        mock_open.return_value = MagicMock()
-        
-        # Execute the test
-        dataset = Dataset('path')
-        assert dataset.process_files() == ['path/file1.txt', 'path/file2.txt', 'path/file3.txt']
-        
-        # Verify the calls
-        mock_listdir.assert_called_once_with('path')
-        assert mock_rdpcap.call_count == 3
-        mock_rdpcap.assert_has_calls([
-            call('path/file1.pcap'),
-            call('path/file2.pcapng'),
-            call('path/file3.cap')
-        ])
+
+class TestDataset(unittest.TestCase):
+    @patch("os.listdir")
+    def setUp(self, mock_listdir):
+        mock_listdir.return_value = []
+        self.dataset = Dataset("dummy_path")
+
+    def test_init(self):
+        """Test if the Dataset object is initialized correctly."""
+        self.assertEqual(self.dataset._Dataset__path, "dummy_path")
+
+    @patch("os.listdir")
+    def test_get_files_from_path(self, mock_listdir):
+        """Test if __get_files_from_path correctly identifies network files (mocked)."""
+        mock_listdir.return_value = ["test1.pcap", "test2.pcapng", "test3.cap", "not_net_file.txt"]
+        expected_files = ["test1.pcap", "test2.pcapng", "test3.cap"]
+        actual_files = self.dataset._Dataset__get_files_from_path()
+        self.assertEqual(sorted(actual_files), sorted(expected_files))
+
+        mock_listdir.return_value = ["not_net_file1.txt", "not_net_file2.log"]
+        self.assertEqual(self.dataset._Dataset__get_files_from_path(), [])
+
+        mock_listdir.return_value = []
+        self.assertEqual(self.dataset._Dataset__get_files_from_path(), [])
+
+
+    @patch("netexplainer.dataset.rdpcap")
+    @patch("builtins.open", new_callable=mock_open)
+    def test_process_file(self, mock_open_func, mock_rdpcap):
+        """Test if __process_file correctly processes a single file (mocked rdpcap)."""
+        mock_rdpcap.return_value = ["mock packet 1", "mock packet 2"]
+        file_path = "dummy_dir/test1.pcap"
+        txt_file = self.dataset._Dataset__process_file(file_path)
+        self.assertTrue(txt_file.endswith(".txt"))
+        expected_txt_file_path = "dummy_dir/test1.txt"
+        self.assertEqual(txt_file, expected_txt_file_path)
+        mock_rdpcap.assert_called_once_with(file_path)
+        mock_open_func.assert_called_once_with(expected_txt_file_path, 'w')
+
+
+    @patch("netexplainer.dataset.rdpcap")
+    @patch("os.listdir")
+    @patch("builtins.open", new_callable=mock_open)
+    def test_process_files(self, mock_open_func, mock_listdir, mock_rdpcap):
+        """Test process_files with mocked rdpcap, listdir, and open."""
+        mock_rdpcap.return_value = ["mock packet"]
+        mock_listdir.return_value = ["test1.pcap", "test2.pcapng", "test3.cap"]
+
+        self.dataset = Dataset("dummy_path")
+        processed_files = self.dataset.process_files()
+        expected_txt_files = [
+            os.path.join("dummy_path", "test1.txt"),
+            os.path.join("dummy_path", "test2.txt"),
+            os.path.join("dummy_path", "test3.txt")
+        ]
+        self.assertEqual(sorted(processed_files), sorted(expected_txt_files))
+
+        expected_rdpcap_calls = [
+            unittest.mock.call(os.path.join("dummy_path", "test1.pcap")),
+            unittest.mock.call(os.path.join("dummy_path", "test2.pcapng")),
+            unittest.mock.call(os.path.join("dummy_path", "test3.cap"))
+        ]
+        mock_rdpcap.assert_has_calls(expected_rdpcap_calls, any_order=True)
+
+        expected_open_calls = [
+            unittest.mock.call(os.path.join("dummy_path", "test1.txt"), 'w'),
+            unittest.mock.call(os.path.join("dummy_path", "test2.txt"), 'w'),
+            unittest.mock.call(os.path.join("dummy_path", "test3.txt"), 'w')
+        ]
+        mock_open_func.assert_has_calls(expected_open_calls, any_order=True)
+
+
+if __name__ == '__main__':
+    unittest.main()
