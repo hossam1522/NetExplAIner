@@ -9,7 +9,7 @@ class Dataset:
         Args:
             path (str): The path in which the files are located
         """
-        self.__path = path
+        self.__path = os.path.dirname(os.path.abspath(__file__)) + '/' + path
         self.__files = self.__get_files_from_path()
     
     def __get_files_from_path(self) -> list:
