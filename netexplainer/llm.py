@@ -19,4 +19,4 @@ class LLM:
         )
 
         loader = DirectoryLoader(data_path)
-        self.docs = loader.load()
+        self.file = loader.load()
