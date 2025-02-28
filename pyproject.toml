@@ -9,7 +9,7 @@ description = "Using LLMs to analyze network traces by decomposing queries in ma
 authors = [
     { name = "Hossam", email = "hossam@correo.ugr.es" }
 ]
-dependencies = ["scapy", "pytest"]
+dependencies = ["scapy", "pytest", "langchain"]
 requires-python = ">=3.8"
 readme = "README.md"
 license = { file = "MIT" }
