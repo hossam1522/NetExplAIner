@@ -1,6 +1,6 @@
 import os
 from dotenv import load_dotenv
-from langchain_community.document_loaders import DirectoryLoader
+from langchain_community.document_loaders import TextLoader
 from langchain_google_genai import ChatGoogleGenerativeAI
 
 
@@ -18,5 +18,5 @@ class LLM:
             # other params...
         )
 
-        loader = DirectoryLoader(data_path)
+        loader = TextLoader(data_path)
         self.file = loader.load()
