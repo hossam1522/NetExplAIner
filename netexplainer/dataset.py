@@ -1,5 +1,7 @@
 from scapy.all import rdpcap
 import os
+from subprocess import check_output
+import re
 
 class Dataset:
     def __init__(self, path: str):
@@ -57,12 +59,58 @@ class Dataset:
         Returns:
             str: The path of the processed file
         """
-        packets = rdpcap(file_path)
+        packets = self.__cap_to_str(file_path)
         txt_file_path = file_path.replace('.pcapng', '.txt').replace('.pcap', '.txt').replace('.cap', '.txt')
         with open(txt_file_path, 'w') as f:
-            num = 0
-            for packet in packets:
-                if num < 21000:
-                    f.write(str(packet) + '\n')
-                    num += 1
+            f.write(f"No.|Time|Source|Destination|Protocol|Length|Info\n")
+            f.write(packets)
+            #num = 0
+            #for packet in packets:
+            #    if num < 21000:
+            #        f.write(str(packet) + '\n')
+            #        num += 1
         return txt_file_path
+
+    def __cap_to_str(self, file: str) -> str:
+        try:
+            out = check_output(
+                [
+                    "tshark",
+                    "-r",
+                    file,
+                    "-T",
+                    "tabs",
+                ]
+            )
+            return self.__clean_cap_format(out.decode("utf-8"))
+        except Exception as e:
+            raise Exception(f"Fail reading the file. ERROR: {e}")
+
+    def __clean_cap_format(self, cap: str) -> str:
+        # Split the string by lines
+        cap_lines = cap.strip().split("\n")
+
+        match_tabs = r"(?<!\\)\t"
+
+        table_rows = []
+
+        for line in cap_lines:
+            columns = re.split(match_tabs, line.strip())
+
+            if "\u2192" in columns:
+                # Remove it from list
+                columns.remove("\u2192")
+
+            # Format columns elements before append them to the table
+            for i, col in enumerate(columns):
+                col = col.strip().replace("\u2192", "->").replace('"', "'")
+                columns[i] = col
+
+            table_rows.append(columns)
+
+        cap_formated = ""
+
+        for row in table_rows:
+            cap_formated += " | ".join(row) + "\n"
+
+        return cap_formated
