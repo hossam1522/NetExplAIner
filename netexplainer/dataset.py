@@ -60,6 +60,9 @@ class Dataset:
         packets = rdpcap(file_path)
         txt_file_path = file_path.replace('.pcapng', '.txt').replace('.pcap', '.txt').replace('.cap', '.txt')
         with open(txt_file_path, 'w') as f:
+            num = 0
             for packet in packets:
-                f.write(str(packet) + '\n')
+                if num < 21000:
+                    f.write(str(packet) + '\n')
+                    num += 1
         return txt_file_path
