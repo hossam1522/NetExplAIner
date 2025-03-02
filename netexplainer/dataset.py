@@ -94,19 +94,24 @@ class Dataset:
 
         table_rows = []
 
+        num = 0
+
         for line in cap_lines:
-            columns = re.split(match_tabs, line.strip())
+            if num < 11000:
+                columns = re.split(match_tabs, line.strip())
 
-            if "\u2192" in columns:
-                # Remove it from list
-                columns.remove("\u2192")
+                if "\u2192" in columns:
+                    # Remove it from list
+                    columns.remove("\u2192")
 
-            # Format columns elements before append them to the table
-            for i, col in enumerate(columns):
-                col = col.strip().replace("\u2192", "->").replace('"', "'")
-                columns[i] = col
+                # Format columns elements before append them to the table
+                for i, col in enumerate(columns):
+                    col = col.strip().replace("\u2192", "->").replace('"', "'")
+                    columns[i] = col
 
-            table_rows.append(columns)
+                table_rows.append(columns)
+
+                num += 1
 
         cap_formated = ""
 
