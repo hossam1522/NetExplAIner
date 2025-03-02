@@ -22,16 +22,7 @@ def main():
     dataset = Dataset('downloads')
     processed_files = dataset.process_files()
     llm = LLM(processed_files[0])
-    #answer = llm.model.invoke({"question": "What is the total number of packets in the trace?"})
-    #messages = [
-    #    (f"{llm.file[0].page_content[0:1250000]}"
-    #    ),
-    #    ("What is the total number of packets in the trace?")
-    #]
-    #answer = (llm.model | StrOutputParser()).invoke(messages)
-    #print(answer)
-    #print(len(llm.file[0].page_content))
-
+    
     vector_store = Chroma.from_documents(documents=llm.file, 
                                          embedding=GoogleGenerativeAIEmbeddings(model="models/text-embedding-004"))
     
@@ -48,22 +39,17 @@ def main():
     question = "How many unique communicators are present in the trace?"
 
     sub_questions = generate_queries_decomposition.invoke({"question":question})
-    #print (sub_questions)
-    #return
     rag_results = []
     prompt_rag = hub.pull("rlm/rag-prompt")
 
     for sub_question in sub_questions:
-        time.sleep(60)
+        time.sleep(30)
         print(sub_question)
         retrieved_docs = retriever.invoke(sub_question)
         answer = (prompt_rag | llm.model | StrOutputParser()).invoke({"context": retrieved_docs,
                                                                         "question": sub_question})
         print(answer)
         rag_results.append(answer)
-
-    #print((prompt_rag | llm.model | StrOutputParser()).invoke({"context": retriever.invoke(question),
-    #                                                            "question": question}))
 
     context = format_qa_pairs(sub_questions, rag_results)
 

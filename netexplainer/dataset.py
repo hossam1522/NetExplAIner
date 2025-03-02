@@ -64,11 +64,6 @@ class Dataset:
         with open(txt_file_path, 'w') as f:
             f.write(f"No.|Time|Source|Destination|Protocol|Length|Info\n")
             f.write(packets)
-            #num = 0
-            #for packet in packets:
-            #    if num < 21000:
-            #        f.write(str(packet) + '\n')
-            #        num += 1
         return txt_file_path
 
     def __cap_to_str(self, file: str) -> str:
