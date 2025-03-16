@@ -4,7 +4,6 @@ from langchain_core.output_parsers import StrOutputParser
 from langchain_google_genai import GoogleGenerativeAIEmbeddings
 from langchain_community.vectorstores import Chroma
 from langchain.prompts import ChatPromptTemplate
-from langchain import hub
 import time
 
 
@@ -30,10 +29,9 @@ def main():
 
         retriever = vector_store.as_retriever(search_kwargs={"k": 1})
 
-        template = """You are a network analyst that generates multiple sub-questions related to an input question about a network trace. \n
-        The goal is to break down the input into a set of sub-problems / sub-questions that can be answers in isolation. \n
-        Generate queries related to: {question} \n
-        The output should be ONLY a list of sub-questions splited with '\ n'. \n"""
+        template = """You are a network analyst that generates multiple sub-questions related to an input question about a network trace.
+        I do not need the answer to the question. The ouput should only contain the sub-questions. Be as simple as possible.
+        Input question: {question}"""
         prompt_decomposition = ChatPromptTemplate.from_template(template)
 
         generate_queries_decomposition = ( prompt_decomposition | llm.model | StrOutputParser() | (lambda x: x.split("\n")))
@@ -42,13 +40,19 @@ def main():
 
         sub_questions = generate_queries_decomposition.invoke({"question":question})
         rag_results = []
-        prompt_rag = hub.pull("rlm/rag-prompt")
+        rag_template = """You are a network analyst that answer questions about network traces.
+        Use the following network trace to answer the questions.
+        If you don't know the answer, just say that you don't know. Keep the answer as concise as possible.
+        Question: {question} 
+        Traces: {traces} 
+        Answer:"""
+        prompt_rag = ChatPromptTemplate.from_template(rag_template)
 
         for sub_question in sub_questions:
-            time.sleep(30)
+            time.sleep(60)
             print(sub_question)
             retrieved_docs = retriever.invoke(sub_question)
-            answer = (prompt_rag | llm.model | StrOutputParser()).invoke({"context": retrieved_docs,
+            answer = (prompt_rag | llm.model | StrOutputParser()).invoke({"traces": retrieved_docs,
                                                                             "question": sub_question})
             print(answer)
             rag_results.append(answer)
