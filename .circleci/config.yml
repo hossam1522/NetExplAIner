@@ -1,0 +1,17 @@
+version: 2.1
+
+jobs:
+  test:
+    docker:
+      - image: hossam1522/netexplainer
+    steps:
+      - checkout
+      - run:
+          name: Run unit tests
+          command: |
+            make test
+
+workflows:
+  main:
+    jobs:
+      - test
