@@ -1,5 +1,5 @@
-from dataset import Dataset
-from llm import LLM
+from netexplainer.dataset import Dataset
+from netexplainer.llm import LLM
 from langchain_core.output_parsers import StrOutputParser
 from langchain_google_genai import GoogleGenerativeAIEmbeddings
 from langchain_community.vectorstores import Chroma
