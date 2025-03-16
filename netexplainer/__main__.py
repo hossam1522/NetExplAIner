@@ -42,13 +42,19 @@ def main():
 
         sub_questions = generate_queries_decomposition.invoke({"question":question})
         rag_results = []
-        prompt_rag = hub.pull("rlm/rag-prompt")
+        rag_template = """You are a network analyst that answer questions about network traces.
+        Use the following network trace to answer the questions.
+        If you don't know the answer, just say that you don't know. Use three sentences maximum and keep the answer concise.
+        Question: {question} 
+        Traces: {traces} 
+        Answer:"""
+        prompt_rag = ChatPromptTemplate.from_template(rag_template)
 
         for sub_question in sub_questions:
             time.sleep(30)
             print(sub_question)
             retrieved_docs = retriever.invoke(sub_question)
-            answer = (prompt_rag | llm.model | StrOutputParser()).invoke({"context": retrieved_docs,
+            answer = (prompt_rag | llm.model | StrOutputParser()).invoke({"traces": retrieved_docs,
                                                                             "question": sub_question})
             print(answer)
             rag_results.append(answer)
