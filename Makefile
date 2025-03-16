@@ -1,4 +1,4 @@
-.PHONY: help check install
+.PHONY: help check install test
 
 help:
 	@echo "Usage: make [target]"
@@ -6,6 +6,7 @@ help:
 	@echo "Targets:"
 	@echo "  help          	Show this help message"
 	@echo "  install       	Install the package"
+	@echo "  test          	Run the tests"
 	@echo "  check 	    	Check the code for syntax errors"
 
 check:
@@ -13,3 +14,6 @@ check:
 
 install:
 	uv build && uv lock
+
+test:
+	pytest tests

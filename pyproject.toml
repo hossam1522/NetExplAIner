@@ -10,8 +10,6 @@ authors = [
     { name = "Hossam", email = "hossam@correo.ugr.es" }
 ]
 dependencies = ["scapy", "pytest", "langchain", "langchain_google_genai", "langchain_community", "langchain_core"]
-requires-python = ">=3.8"
+requires-python = ">=3.9"
 readme = "README.md"
 license = { file = "MIT" }
-
-[tool.uv]
