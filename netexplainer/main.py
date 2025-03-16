@@ -21,57 +21,59 @@ def format_qa_pairs(questions, answers):
 def main():
     dataset = Dataset('downloads')
     processed_files = dataset.process_files()
-    llm = LLM(processed_files[0])
-    
-    vector_store = Chroma.from_documents(documents=llm.file, 
-                                         embedding=GoogleGenerativeAIEmbeddings(model="models/text-embedding-004"))
-    
-    retriever = vector_store.as_retriever(search_kwargs={"k": 1})
 
-    template = """You are a network analyst that generates multiple sub-questions related to an input question about a network trace. \n
-    The goal is to break down the input into a set of sub-problems / sub-questions that can be answers in isolation. \n
-    Generate queries related to: {question} \n
-    The output should be ONLY a list of sub-questions splited with '\ n'. \n"""
-    prompt_decomposition = ChatPromptTemplate.from_template(template)
+    for file in processed_files:
+        llm = LLM(file)
 
-    generate_queries_decomposition = ( prompt_decomposition | llm.model | StrOutputParser() | (lambda x: x.split("\n")))
+        vector_store = Chroma.from_documents(documents=llm.file,
+                                            embedding=GoogleGenerativeAIEmbeddings(model="models/text-embedding-004"))
 
-    question = "How many unique communicators are present in the trace?"
+        retriever = vector_store.as_retriever(search_kwargs={"k": 1})
 
-    sub_questions = generate_queries_decomposition.invoke({"question":question})
-    rag_results = []
-    prompt_rag = hub.pull("rlm/rag-prompt")
+        template = """You are a network analyst that generates multiple sub-questions related to an input question about a network trace. \n
+        The goal is to break down the input into a set of sub-problems / sub-questions that can be answers in isolation. \n
+        Generate queries related to: {question} \n
+        The output should be ONLY a list of sub-questions splited with '\ n'. \n"""
+        prompt_decomposition = ChatPromptTemplate.from_template(template)
 
-    for sub_question in sub_questions:
-        time.sleep(30)
-        print(sub_question)
-        retrieved_docs = retriever.invoke(sub_question)
-        answer = (prompt_rag | llm.model | StrOutputParser()).invoke({"context": retrieved_docs,
-                                                                        "question": sub_question})
-        print(answer)
-        rag_results.append(answer)
+        generate_queries_decomposition = ( prompt_decomposition | llm.model | StrOutputParser() | (lambda x: x.split("\n")))
 
-    context = format_qa_pairs(sub_questions, rag_results)
+        question = "How many unique communicators are present in the trace?"
 
-    template = """Here is a set of Q+A pairs:
+        sub_questions = generate_queries_decomposition.invoke({"question":question})
+        rag_results = []
+        prompt_rag = hub.pull("rlm/rag-prompt")
 
-    {context}
+        for sub_question in sub_questions:
+            time.sleep(30)
+            print(sub_question)
+            retrieved_docs = retriever.invoke(sub_question)
+            answer = (prompt_rag | llm.model | StrOutputParser()).invoke({"context": retrieved_docs,
+                                                                            "question": sub_question})
+            print(answer)
+            rag_results.append(answer)
 
-    Use these to synthesize an answer to the question: {question}
-    """
+        context = format_qa_pairs(sub_questions, rag_results)
 
-    prompt = ChatPromptTemplate.from_template(template)
-    time.sleep(20)
-    
-    final_rag_chain = (
-        prompt
-        | llm.model
-        | StrOutputParser()
-    )
+        template = """Here is a set of Q+A pairs:
 
-    final_aswer = final_rag_chain.invoke({"context":context,"question":question})
+        {context}
 
-    print(final_aswer)
+        Use these to synthesize an answer to the question: {question}
+        """
+
+        prompt = ChatPromptTemplate.from_template(template)
+        time.sleep(20)
+
+        final_rag_chain = (
+            prompt
+            | llm.model
+            | StrOutputParser()
+        )
+
+        final_aswer = final_rag_chain.invoke({"context":context,"question":question})
+
+        print(final_aswer)
 
 if __name__ == '__main__':
     main()
