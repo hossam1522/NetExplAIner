@@ -10,7 +10,7 @@ authors = [
     { name = "Hossam", email = "hossam@correo.ugr.es" }
 ]
 dependencies = ["scapy", "pytest", "langchain", "langchain_google_genai", "langchain_community", "langchain_core", "chromadb"]
-requires-python = ">=3.9"
+requires-python = ">=3.10"
 readme = "README.md"
 license = { file = "LICENSE" }
 
