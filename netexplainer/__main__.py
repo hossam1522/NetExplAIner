@@ -29,10 +29,9 @@ def main():
 
         retriever = vector_store.as_retriever(search_kwargs={"k": 1})
 
-        template = """You are a network analyst that generates multiple sub-questions related to an input question about a network trace. \n
-        The goal is to break down the input into a set of sub-problems / sub-questions that can be answers in isolation. \n
-        Generate queries related to: {question} \n
-        The output should be ONLY a list of sub-questions splited with '\ n'. \n"""
+        template = """You are a network analyst that generates multiple sub-questions related to an input question about a network trace.
+        I do not need the answer to the question. The ouput should only contain the sub-questions. Be as simple as possible.
+        Input question: {question}"""
         prompt_decomposition = ChatPromptTemplate.from_template(template)
 
         generate_queries_decomposition = ( prompt_decomposition | llm.model | StrOutputParser() | (lambda x: x.split("\n")))
@@ -50,7 +49,7 @@ def main():
         prompt_rag = ChatPromptTemplate.from_template(rag_template)
 
         for sub_question in sub_questions:
-            time.sleep(30)
+            time.sleep(60)
             print(sub_question)
             retrieved_docs = retriever.invoke(sub_question)
             answer = (prompt_rag | llm.model | StrOutputParser()).invoke({"traces": retrieved_docs,
