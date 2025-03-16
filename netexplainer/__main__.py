@@ -4,7 +4,6 @@ from langchain_core.output_parsers import StrOutputParser
 from langchain_google_genai import GoogleGenerativeAIEmbeddings
 from langchain_community.vectorstores import Chroma
 from langchain.prompts import ChatPromptTemplate
-from langchain import hub
 import time
 
 
@@ -44,7 +43,7 @@ def main():
         rag_results = []
         rag_template = """You are a network analyst that answer questions about network traces.
         Use the following network trace to answer the questions.
-        If you don't know the answer, just say that you don't know. Use three sentences maximum and keep the answer concise.
+        If you don't know the answer, just say that you don't know. Keep the answer as concise as possible.
         Question: {question} 
         Traces: {traces} 
         Answer:"""
