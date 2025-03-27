@@ -28,4 +28,4 @@ run:
 	uv run python3 -m netexplainer
 
 clean:
-	rm -rf *.egg-info/ .pytest_cache/ __pycache__/ build/ dist/
+	rm -rf *.egg-info/ .pytest_cache/ __pycache__/ build/ dist/ netexplainer/__pycache__/ tests/__pycache__/

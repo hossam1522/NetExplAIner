@@ -2,6 +2,7 @@ from scapy.all import rdpcap
 import os
 from subprocess import check_output
 import re
+import yaml
 
 class Dataset:
     def __init__(self, path: str):
@@ -13,6 +14,13 @@ class Dataset:
         """
         self.__path = os.path.dirname(os.path.abspath(__file__)) + '/' + path
         self.__files = self.__get_files_from_path()
+
+        with open('questions/questions.yaml', 'r') as file:
+            data = yaml.safe_load(file)
+
+        for item in data['questions']:
+            self.questions = item['question']
+            self.subquestions = item['subquestions']
     
     def __get_files_from_path(self) -> list:
         """
