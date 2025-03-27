@@ -5,12 +5,12 @@ import re
 import yaml
 
 class Dataset:
-    def __init__(self, path: str):
+    def __init__(self, file_path: str):
         """
-        Initialize the dataset object with the path in which the files are located
+        Initialize the dataset object with the file provided
 
         Args:
-            path (str): The path in which the files are located
+            file_path (str): The path of the file to process
         """
         self.__path = os.path.dirname(os.path.abspath(__file__)) + '/' + path
         self.__files = self.__get_files_from_path()
