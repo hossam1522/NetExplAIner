@@ -1,79 +1,49 @@
 import unittest
 import os
-from unittest.mock import patch, mock_open
+from unittest.mock import patch, mock_open, MagicMock
 from netexplainer.dataset import Dataset
 
-
 class TestDataset(unittest.TestCase):
-    @patch("os.listdir")
-    def setUp(self, mock_listdir):
-        mock_listdir.return_value = []
-        self.dataset = Dataset("dummy_path")
+    @patch("netexplainer.dataset.check_output")  # Mockear la referencia correcta
+    @patch("os.path.exists", return_value=True)
+    @patch("os.path.isfile", return_value=True)
+    def setUp(self, mock_isfile, mock_exists, mock_check_output):
+        mock_check_output.return_value = b"1\t0.0\tSrc\tDst\tHTTP\t100\tMocked Data"
 
-    def test_init(self):
-        """Test if the Dataset object is initialized correctly."""
-        self.assertEqual(self.dataset._Dataset__path, os.path.dirname(os.path.abspath("netexplainer/dataset.py")) + '/dummy_path')
+        self.mock_questions_content = """
+        questions:
+          - question: "Sample question"
+            subquestions: ["Sub1", "Sub2"]
+        """
+        with patch("builtins.open", mock_open(read_data=self.mock_questions_content)):
+            self.dataset = Dataset("dummy.pcap", "dummy_questions.yaml")
 
-    @patch("os.listdir")
-    def test_get_files_from_path(self, mock_listdir):
-        """Test if __get_files_from_path correctly identifies network files (mocked)."""
-        mock_listdir.return_value = ["test1.pcap", "test2.pcapng", "test3.cap", "not_net_file.txt"]
-        expected_files = ["test1.pcap", "test2.pcapng", "test3.cap"]
-        actual_files = self.dataset._Dataset__get_files_from_path()
-        self.assertEqual(sorted(actual_files), sorted(expected_files))
+    @patch("netexplainer.dataset.check_output", return_value=b"Mocked Data")
+    @patch("os.path.exists", return_value=True)
+    @patch("os.path.isfile", return_value=True)
+    def test_init(self, mock_isfile, mock_exists, mock_check_output):
+        with patch("builtins.open", mock_open(read_data=self.mock_questions_content)):
+            dataset = Dataset("dummy.pcap", "dummy_questions.yaml")
+            self.assertEqual(dataset._Dataset__path, os.path.abspath("dummy.pcap"))
 
-        mock_listdir.return_value = ["not_net_file1.txt", "not_net_file2.log"]
-        self.assertEqual(self.dataset._Dataset__get_files_from_path(), [])
+    @patch("netexplainer.dataset.check_output", return_value=b"Mocked Data")
+    def test_process_file(self, mock_check_output):
+        processed_path = self.dataset._Dataset__process_file("dummy.pcap")
+        self.assertTrue(processed_path.endswith(".txt"))
 
-        mock_listdir.return_value = []
-        self.assertEqual(self.dataset._Dataset__get_files_from_path(), [])
+    def test_clean_cap_format(self):
+        mocked_data = "1\t0.0\t192.168.1.1\t192.168.1.2\tTCP\t54\t[SYN]"
+        result = self.dataset._Dataset__clean_cap_format(mocked_data)
+        self.assertIn("|", result)
 
+    @patch("os.path.isfile")
+    @patch("os.path.exists")
+    def test_missing_questions_file(self, mock_exists, mock_isfile):
+        mock_exists.side_effect = lambda x: True if x == "dummy.pcap" else False
+        mock_isfile.side_effect = lambda x: True if x == "dummy.pcap" else False
 
-    @patch("netexplainer.dataset.Dataset._Dataset__cap_to_str")
-    @patch("builtins.open", new_callable=mock_open)
-    def test_process_file(self, mock_open_func, mock_cap_to_str):
-        """Test if __process_file correctly processes a single file (mocked rdpcap)."""
-        mock_cap_to_str.return_value = "mock packet 1\nmock packet 2"
-        file_path = "dummy_dir/test1.pcap"
-        txt_file = self.dataset._Dataset__process_file(file_path)
-        self.assertTrue(txt_file.endswith(".txt"))
-        expected_txt_file_path = "dummy_dir/test1.txt"
-        self.assertEqual(txt_file, expected_txt_file_path)
-        mock_cap_to_str.assert_called_once_with(file_path)
-        mock_open_func.assert_called_once_with(expected_txt_file_path, 'w')
-
-
-    @patch("netexplainer.dataset.Dataset._Dataset__cap_to_str")
-    @patch("os.listdir")
-    @patch("builtins.open", new_callable=mock_open)
-    def test_process_files(self, mock_open_func, mock_listdir, mock_cap_to_str):
-        """Test process_files with mocked rdpcap, listdir, and open."""
-        mock_cap_to_str.return_value = "mock packet 1"
-        mock_listdir.return_value = ["test1.pcap", "test2.pcapng", "test3.cap"]
-
-        self.dataset = Dataset("dummy_path")
-        processed_files = self.dataset.process_files()
-        expected_txt_files = [
-            os.path.join(os.path.dirname(os.path.abspath("netexplainer/dataset.py")), "dummy_path", "test1.txt"),
-            os.path.join(os.path.dirname(os.path.abspath("netexplainer/dataset.py")), "dummy_path", "test2.txt"),
-            os.path.join(os.path.dirname(os.path.abspath("netexplainer/dataset.py")), "dummy_path", "test3.txt")
-        ]
-        self.assertEqual(sorted(processed_files), sorted(expected_txt_files))
-
-        expected_rdpcap_calls = [
-            unittest.mock.call(os.path.join(os.path.dirname(os.path.abspath("netexplainer/dataset.py")), "dummy_path", "test1.pcap")),
-            unittest.mock.call(os.path.join(os.path.dirname(os.path.abspath("netexplainer/dataset.py")), "dummy_path", "test2.pcapng")),
-            unittest.mock.call(os.path.join(os.path.dirname(os.path.abspath("netexplainer/dataset.py")), "dummy_path", "test3.cap"))
-        ]
-        mock_cap_to_str.assert_has_calls(expected_rdpcap_calls, any_order=True)
-
-        expected_open_calls = [
-            unittest.mock.call(os.path.join(os.path.dirname(os.path.abspath("netexplainer/dataset.py")), "dummy_path", "test1.txt"), 'w'),
-            unittest.mock.call(os.path.join(os.path.dirname(os.path.abspath("netexplainer/dataset.py")), "dummy_path", "test2.txt"), 'w'),
-            unittest.mock.call(os.path.join(os.path.dirname(os.path.abspath("netexplainer/dataset.py")), "dummy_path", "test3.txt"), 'w')
-        ]
-        mock_open_func.assert_has_calls(expected_open_calls, any_order=True)
-
+        with self.assertRaises(FileNotFoundError):
+            Dataset("dummy.pcap", "missing.yaml")
 
 if __name__ == '__main__':
     unittest.main()

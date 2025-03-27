@@ -18,66 +18,63 @@ def format_qa_pairs(questions, answers):
 
 
 def main():
-    dataset = Dataset('downloads')
-    processed_files = dataset.process_files()
+    dataset = Dataset('downloads/data.pcap')
+    llm = LLM(dataset.processed_file)
 
-    for file in processed_files:
-        llm = LLM(file)
+    vector_store = Chroma.from_documents(documents=llm.file,
+                                        embedding=GoogleGenerativeAIEmbeddings(model="models/text-embedding-004"))
 
-        vector_store = Chroma.from_documents(documents=llm.file,
-                                            embedding=GoogleGenerativeAIEmbeddings(model="models/text-embedding-004"))
+    retriever = vector_store.as_retriever(search_kwargs={"k": 1})
 
-        retriever = vector_store.as_retriever(search_kwargs={"k": 1})
+    template = """You are a network analyst that generates multiple sub-questions related to an input question about a network trace.
+    I do not need the answer to the question. The ouput should only contain the sub-questions. Be as simple as possible.
+    Input question: {question}"""
+    prompt_decomposition = ChatPromptTemplate.from_template(template)
 
-        template = """You are a network analyst that generates multiple sub-questions related to an input question about a network trace.
-        I do not need the answer to the question. The ouput should only contain the sub-questions. Be as simple as possible.
-        Input question: {question}"""
-        prompt_decomposition = ChatPromptTemplate.from_template(template)
+    generate_queries_decomposition = ( prompt_decomposition | llm.model | StrOutputParser() | (lambda x: x.split("\n")))
 
-        generate_queries_decomposition = ( prompt_decomposition | llm.model | StrOutputParser() | (lambda x: x.split("\n")))
+    question = "How many unique communicators are present in the trace?"
 
-        question = "How many unique communicators are present in the trace?"
+    sub_questions = generate_queries_decomposition.invoke({"question":question})
+    rag_results = []
+    rag_template = """You are a network analyst that answer questions about network traces.
+    Use the following network trace to answer the questions.
+    If you don't know the answer, just say that you don't know. Keep the answer as concise as possible.
+    Question: {question}
+    Traces: {traces}
+    Answer:"""
+    prompt_rag = ChatPromptTemplate.from_template(rag_template)
 
-        sub_questions = generate_queries_decomposition.invoke({"question":question})
-        rag_results = []
-        rag_template = """You are a network analyst that answer questions about network traces.
-        Use the following network trace to answer the questions.
-        If you don't know the answer, just say that you don't know. Keep the answer as concise as possible.
-        Question: {question} 
-        Traces: {traces} 
-        Answer:"""
-        prompt_rag = ChatPromptTemplate.from_template(rag_template)
+    for sub_question in sub_questions:
+        time.sleep(60)
+        print(sub_question)
+        retrieved_docs = retriever.invoke(sub_question)
+        answer = (prompt_rag | llm.model | StrOutputParser()).invoke({"traces": retrieved_docs,
+                                                                        "question": sub_question})
+        print(answer)
+        rag_results.append(answer)
 
-        for sub_question in sub_questions:
-            time.sleep(60)
-            print(sub_question)
-            retrieved_docs = retriever.invoke(sub_question)
-            answer = (prompt_rag | llm.model | StrOutputParser()).invoke({"traces": retrieved_docs,
-                                                                            "question": sub_question})
-            print(answer)
-            rag_results.append(answer)
+    context = format_qa_pairs(sub_questions, rag_results)
 
-        context = format_qa_pairs(sub_questions, rag_results)
+    template = """Here is a set of Q+A pairs:
 
-        template = """Here is a set of Q+A pairs:
+    {context}
 
-        {context}
+    Use these to synthesize an answer to the question: {question}
+    """
 
-        Use these to synthesize an answer to the question: {question}
-        """
+    prompt = ChatPromptTemplate.from_template(template)
+    time.sleep(20)
 
-        prompt = ChatPromptTemplate.from_template(template)
-        time.sleep(20)
+    final_rag_chain = (
+        prompt
+        | llm.model
+        | StrOutputParser()
+    )
 
-        final_rag_chain = (
-            prompt
-            | llm.model
-            | StrOutputParser()
-        )
+    final_aswer = final_rag_chain.invoke({"context":context,"question":question})
 
-        final_aswer = final_rag_chain.invoke({"context":context,"question":question})
-
-        print(final_aswer)
+    print(final_aswer)
 
 if __name__ == '__main__':
     main()

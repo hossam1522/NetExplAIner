@@ -5,61 +5,43 @@ import re
 import yaml
 
 class Dataset:
-    def __init__(self, path: str):
+    def __init__(self, file_path: str, questions_path: str):
         """
-        Initialize the dataset object with the path in which the files are located
+        Initialize the dataset object with the file provided
 
         Args:
-            path (str): The path in which the files are located
+            file_path (str): The path of the file to process
         """
-        self.__path = os.path.dirname(os.path.abspath(__file__)) + '/' + path
-        self.__files = self.__get_files_from_path()
+        if not os.path.exists(file_path):
+            raise FileNotFoundError(f'The path {file_path} does not exist')
+        elif not os.path.isfile(file_path):
+            raise FileExistsError(f'The path {file_path} is not a file, please provide a file')
+        elif not file_path.endswith('.pcap') and not file_path.endswith('.pcapng') and not file_path.endswith('.cap'):
+            raise TypeError(f'The file {file_path} is not a network file, please provide a pcap or pcapng file')
+        else:
+            self.__path = os.path.abspath(file_path)
 
-        with open('questions/questions.yaml', 'r') as file:
+        if not os.path.exists(questions_path):
+            raise FileNotFoundError(f'The path {questions_path} does not exist')
+        elif not os.path.isfile(questions_path):
+            raise FileExistsError(f'The path {questions_path} is not a file, please provide a file')
+        elif not questions_path.endswith('.yaml'):
+            raise TypeError(f'The file {questions_path} is not a yaml file, please provide a yaml file')
+        else:
+            self.__questions_path = os.path.abspath(questions_path)
+        
+        with open(self.__questions_path, 'r') as file:
             data = yaml.safe_load(file)
 
         for item in data['questions']:
             self.questions = item['question']
             self.subquestions = item['subquestions']
-    
-    def __get_files_from_path(self) -> list:
-        """
-        Get the files that contain the network data from the path
 
-        Returns:
-            list: The list of the files that contain the network data
-
-        Raises:
-            FileNotFoundError: If the path does not exist
-        """
-        try:
-            files_in_path = os.listdir(self.__path)
-            net_files = []
-            for file in files_in_path:
-                if file.endswith('.pcap') or file.endswith('.pcapng') or file.endswith('.cap'):
-                    net_files.append(file)
-
-            return net_files
-        except FileNotFoundError:
-            raise FileNotFoundError(f'The path {self.__path} does not exist')
-
-    def process_files(self) -> list:
-        """
-        Process the files in the path and convert them to txt format in the same path
-
-        Returns:
-            list: The list of the processed files
-        """
-        processed_files = []
-        for file in self.__files:
-            file_path = os.path.join(self.__path, file)
-            processed_file = self.__process_file(file_path)
-            processed_files.append(processed_file)
-        return processed_files
+        self.processed_file = self.__process_file(self.__path)
     
     def __process_file(self, file_path: str) -> str:
         """
-        Process the file and convert it to txt format using scapy
+        Process the file and convert it to txt format
         
         Args:
             file_path (str): The path of the file to process
