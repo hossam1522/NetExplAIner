@@ -21,9 +21,6 @@ class Dataset:
         else:
             self.__path = os.path.dirname(os.path.abspath(file_path))
 
-        self.__path = os.path.dirname(os.path.abspath(__file__)) + '/' + path
-        self.__files = self.__get_files_from_path()
-
         with open('questions/questions.yaml', 'r') as file:
             data = yaml.safe_load(file)
 
