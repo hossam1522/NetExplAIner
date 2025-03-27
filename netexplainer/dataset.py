@@ -27,13 +27,17 @@ class Dataset:
             raise FileExistsError(f'The path {questions_path} is not a file, please provide a file')
         elif not questions_path.endswith('.yaml'):
             raise TypeError(f'The file {questions_path} is not a yaml file, please provide a yaml file')
+        else:
+            self.__questions_path = os.path.dirname(os.path.abspath(questions_path))
         
-        with open(questions_path, 'r') as file:
+        with open(self.__questions_path, 'r') as file:
             data = yaml.safe_load(file)
 
         for item in data['questions']:
             self.questions = item['question']
             self.subquestions = item['subquestions']
+
+        self.__processed_file_path = self.__process_file(self.__path)
 
     def process_files(self) -> list:
         """
@@ -51,7 +55,7 @@ class Dataset:
     
     def __process_file(self, file_path: str) -> str:
         """
-        Process the file and convert it to txt format using scapy
+        Process the file and convert it to txt format
         
         Args:
             file_path (str): The path of the file to process
