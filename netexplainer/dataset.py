@@ -19,7 +19,7 @@ class Dataset:
         elif not file_path.endswith('.pcap') and not file_path.endswith('.pcapng') and not file_path.endswith('.cap'):
             raise TypeError(f'The file {file_path} is not a network file, please provide a pcap or pcapng file')
         else:
-            self.__path = os.path.dirname(os.path.abspath(file_path))
+            self.__path = os.path.abspath(file_path)
 
         if not os.path.exists(questions_path):
             raise FileNotFoundError(f'The path {questions_path} does not exist')
@@ -28,7 +28,7 @@ class Dataset:
         elif not questions_path.endswith('.yaml'):
             raise TypeError(f'The file {questions_path} is not a yaml file, please provide a yaml file')
         else:
-            self.__questions_path = os.path.dirname(os.path.abspath(questions_path))
+            self.__questions_path = os.path.abspath(questions_path)
         
         with open(self.__questions_path, 'r') as file:
             data = yaml.safe_load(file)
