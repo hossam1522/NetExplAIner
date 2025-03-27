@@ -34,27 +34,6 @@ class Dataset:
         for item in data['questions']:
             self.questions = item['question']
             self.subquestions = item['subquestions']
-    
-    def __get_files_from_path(self) -> list:
-        """
-        Get the files that contain the network data from the path
-
-        Returns:
-            list: The list of the files that contain the network data
-
-        Raises:
-            FileNotFoundError: If the path does not exist
-        """
-        try:
-            files_in_path = os.listdir(self.__path)
-            net_files = []
-            for file in files_in_path:
-                if file.endswith('.pcap') or file.endswith('.pcapng') or file.endswith('.cap'):
-                    net_files.append(file)
-
-            return net_files
-        except FileNotFoundError:
-            raise FileNotFoundError(f'The path {self.__path} does not exist')
 
     def process_files(self) -> list:
         """
