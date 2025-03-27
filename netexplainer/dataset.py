@@ -12,6 +12,15 @@ class Dataset:
         Args:
             file_path (str): The path of the file to process
         """
+        if not os.path.exists(file_path):
+            raise FileNotFoundError(f'The path {file_path} does not exist')
+        elif not os.path.isfile(file_path):
+            raise FileExistsError(f'The path {file_path} is not a file, please provide a file')
+        elif not file_path.endswith('.pcap') and not file_path.endswith('.pcapng') and not file_path.endswith('.cap'):
+            raise TypeError(f'The file {file_path} is not a network file, please provide a pcap or pcapng file')
+        else:
+            self.__path = os.path.dirname(os.path.abspath(file_path))
+
         self.__path = os.path.dirname(os.path.abspath(__file__)) + '/' + path
         self.__files = self.__get_files_from_path()
 
