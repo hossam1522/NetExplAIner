@@ -37,21 +37,7 @@ class Dataset:
             self.questions = item['question']
             self.subquestions = item['subquestions']
 
-        self.__processed_file_path = self.__process_file(self.__path)
-
-    def process_files(self) -> list:
-        """
-        Process the files in the path and convert them to txt format in the same path
-
-        Returns:
-            list: The list of the processed files
-        """
-        processed_files = []
-        for file in self.__files:
-            file_path = os.path.join(self.__path, file)
-            processed_file = self.__process_file(file_path)
-            processed_files.append(processed_file)
-        return processed_files
+        self.processed_file = self.__process_file(self.__path)
     
     def __process_file(self, file_path: str) -> str:
         """
