@@ -5,7 +5,7 @@ import re
 import yaml
 
 class Dataset:
-    def __init__(self, file_path: str):
+    def __init__(self, file_path: str, questions_path: str):
         """
         Initialize the dataset object with the file provided
 
@@ -21,7 +21,14 @@ class Dataset:
         else:
             self.__path = os.path.dirname(os.path.abspath(file_path))
 
-        with open('questions/questions.yaml', 'r') as file:
+        if not os.path.exists(questions_path):
+            raise FileNotFoundError(f'The path {questions_path} does not exist')
+        elif not os.path.isfile(questions_path):
+            raise FileExistsError(f'The path {questions_path} is not a file, please provide a file')
+        elif not questions_path.endswith('.yaml'):
+            raise TypeError(f'The file {questions_path} is not a yaml file, please provide a yaml file')
+        
+        with open(questions_path, 'r') as file:
             data = yaml.safe_load(file)
 
         for item in data['questions']:
