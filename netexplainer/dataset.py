@@ -33,9 +33,13 @@ class Dataset:
         with open(self.__questions_path, 'r') as file:
             data = yaml.safe_load(file)
 
+        self.questions_subquestions = {}
+        self.questions_answers = {}
+
         for item in data['questions']:
-            self.questions = item['question']
-            self.subquestions = item['subquestions']
+            question = item['question']
+            subquestions = item['subquestions']
+            self.questions_subquestions[question] = subquestions
 
         self.processed_file = self.__process_file(self.__path)
     
@@ -104,3 +108,11 @@ class Dataset:
             cap_formated += " | ".join(row) + "\n"
 
         return cap_formated
+
+    def __answer_question(self) -> None:
+        """
+        Answer the question using the processed file
+        """
+        for question in self.questions:
+            if question == "What is the total number of packets in the trace?":
+                self.qa[question] = rdpcap(self.processed_file).count
