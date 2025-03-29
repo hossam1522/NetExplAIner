@@ -6,7 +6,6 @@ RUN apt-get update && \
     useradd -m test
 
 ENV PATH="/home/test/.local/bin:$PATH"
-ENV PYTHONPATH=/app/test
 ENV UV_CACHE_DIR=/home/test/.cache/uv
 ENV UV_PROJECT_ENVIRONMENT=/home/test/.venv
 
