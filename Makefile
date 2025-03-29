@@ -23,7 +23,7 @@ install:
 	uv run pip install .
 
 test:
-	export PYTHONPATH=$(shell pwd)
+	export PYTHONPATH=$(pwd)
 	uv run pip install .[test]
 	uv run pytest
 
