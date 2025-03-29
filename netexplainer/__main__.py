@@ -5,15 +5,6 @@ from langchain.prompts import ChatPromptTemplate
 import time
 
 
-def format_qa_pairs(questions, answers):
-    """Format Q and A pairs"""
-
-    formatted_string = ""
-    for i, (question, answer) in enumerate(zip(questions, answers), start=1):
-        formatted_string += f"Question {i}: {question}\nAnswer {i}: {answer}\n\n"
-    return formatted_string.strip()
-
-
 dataset = Dataset('netexplainer/downloads/data.pcap', 'netexplainer/questions/questions.yaml')
 llm = LLM_GEMINI(dataset.processed_file)
 
@@ -45,7 +36,7 @@ for sub_question in sub_questions:
     print(answer)
     results.append(answer)
 
-context = format_qa_pairs(sub_questions, results)
+context = llm.format_qa_pairs(sub_questions, results)
 
 template = """Here is a set of Q+A pairs:
 
