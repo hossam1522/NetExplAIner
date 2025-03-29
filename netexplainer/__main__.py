@@ -19,7 +19,7 @@ def main():
     llm = LLM(dataset.processed_file)
 
     template = """You are a network analyst that generates multiple sub-questions related to an input question about a network trace.
-    I do not need the answer to the question. The ouput should only contain the sub-questions. Be as simple as possible.
+    I do not need the answer to the question. The ouput should only contain the sub-questions. Be as simple as possible. 3 sub-questions as maximum.
     Input question: {question}"""
     prompt_decomposition = ChatPromptTemplate.from_template(template)
 
