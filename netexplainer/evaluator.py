@@ -45,7 +45,7 @@ class Evaluator:
         answer = chain.invoke({"question": question, "subquestions_LLM": subquestions, "subquestions": self.dataset.questions_subquestions[question]})
         return answer
 
-    def evaluate_answers(self, question: str, answer: str) -> str:
+    def evaluate_answer(self, question: str, answer: str) -> str:
         """
         Evaluate the answers obtained from the LLM
 
