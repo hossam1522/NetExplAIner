@@ -43,9 +43,9 @@ class LLM:
 
         return sub_questions
 
-    def answer_question(self, question: str) -> str:
+    def answer_subquestion(self, question: str) -> str:
         """
-        Answer the question using the LLM
+        Answer the sub-question using the LLM
         Args:
             question (str): The question to process
         Returns:
@@ -84,7 +84,7 @@ class LLM:
             formatted_string += f"Question {i}: {question}\nAnswer {i}: {answer}\n\n"
         return formatted_string.strip()
 
-    def combine_qa_pairs(self, question:str, subquestions: list, answers: list) -> str:
+    def get_final_answer(self, question:str, subquestions: list, answers: list) -> str:
         """
         Combine the questions and answers to get a final answer
         Args:
