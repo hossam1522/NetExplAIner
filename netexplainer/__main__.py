@@ -1,5 +1,5 @@
 from netexplainer.dataset import Dataset
-from netexplainer.llm import LLM
+from netexplainer.llm import LLM_GEMINI
 from langchain_core.output_parsers import StrOutputParser
 from langchain.prompts import ChatPromptTemplate
 import time
@@ -16,7 +16,7 @@ def format_qa_pairs(questions, answers):
 
 def main():
     dataset = Dataset('netexplainer/downloads/data.pcap', 'netexplainer/questions/questions.yaml')
-    llm = LLM(dataset.processed_file)
+    llm = LLM_GEMINI(dataset.processed_file)
 
     template = """You are a network analyst that generates multiple sub-questions related to an input question about a network trace.
     I do not need the answer to the question. The ouput should only contain the sub-questions. Be as simple as possible. 3 sub-questions as maximum.
