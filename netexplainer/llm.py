@@ -22,6 +22,13 @@ class LLM:
         loader = TextLoader(data_path)
         self.file = loader.load()
 
+    def format_qa_pairs(self, questions: list, answers: list) -> str:
+        """Format Q and A pairs"""
+        formatted_string = ""
+        for i, (question, answer) in enumerate(zip(questions, answers), start=1):
+            formatted_string += f"Question {i}: {question}\nAnswer {i}: {answer}\n\n"
+        return formatted_string.strip()
+
 class LLM_GEMINI(LLM):
     """
     Class for Google Gemini LLM
