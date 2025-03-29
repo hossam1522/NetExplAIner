@@ -1,6 +1,8 @@
 import os
 from dotenv import load_dotenv
 from langchain_community.document_loaders import TextLoader
+from langchain_core.output_parsers import StrOutputParser
+from langchain.prompts import ChatPromptTemplate
 from langchain_google_genai import ChatGoogleGenerativeAI
 
 
@@ -19,6 +21,7 @@ class LLM:
             raise TypeError(f'The file {data_path} is not a text file, please provide a txt file')
 
         load_dotenv()
+        self.model = None
         loader = TextLoader(data_path)
         self.file = loader.load()
 
@@ -28,6 +31,24 @@ class LLM:
         for i, (question, answer) in enumerate(zip(questions, answers), start=1):
             formatted_string += f"Question {i}: {question}\nAnswer {i}: {answer}\n\n"
         return formatted_string.strip()
+
+    def get_subquestions(self, question: str) -> list:
+        """
+        Get sub-questions from the LLM
+        Args:
+            question (str): The question to process
+        Returns:
+            list: A list of sub-questions
+        """
+        template = """You are a network analyst that generates multiple sub-questions related to an input question about a network trace.
+        I do not need the answer to the question. The ouput should only contain the sub-questions. Be as simple as possible. 3 sub-questions as maximum.
+        Input question: {question}"""
+        prompt_decomposition = ChatPromptTemplate.from_template(template)
+
+        generate_queries_decomposition = ( prompt_decomposition | self.model | StrOutputParser() | (lambda x: x.split("\n")))
+        sub_questions = generate_queries_decomposition.invoke({"question":question})
+
+        return sub_questions
 
 class LLM_GEMINI(LLM):
     """

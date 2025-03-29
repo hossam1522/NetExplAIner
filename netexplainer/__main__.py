@@ -1,23 +1,11 @@
 from netexplainer.dataset import Dataset
 from netexplainer.llm import LLM_GEMINI
-from langchain_core.output_parsers import StrOutputParser
-from langchain.prompts import ChatPromptTemplate
 import time
 
 
 dataset = Dataset('netexplainer/downloads/data.pcap', 'netexplainer/questions/questions.yaml')
 llm = LLM_GEMINI(dataset.processed_file)
 
-template = """You are a network analyst that generates multiple sub-questions related to an input question about a network trace.
-I do not need the answer to the question. The ouput should only contain the sub-questions. Be as simple as possible. 3 sub-questions as maximum.
-Input question: {question}"""
-prompt_decomposition = ChatPromptTemplate.from_template(template)
-
-generate_queries_decomposition = ( prompt_decomposition | llm.model | StrOutputParser() | (lambda x: x.split("\n")))
-
-question = "How many unique communicators are present in the trace?"
-
-sub_questions = generate_queries_decomposition.invoke({"question":question})
 results = []
 template = """You are a network analyst that answer questions about network traces.
 Use the following network trace to answer the questions.
