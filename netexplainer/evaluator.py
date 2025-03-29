@@ -18,9 +18,16 @@ class Evaluator:
         self.dataset = dataset
         self.llm = LLM_GEMINI(dataset.processed_file)
 
-    def evaluate_subquestions(self, question: str, subquestions: list) -> None:
+    def evaluate_subquestions(self, question: str, subquestions: list) -> str:
         """
         Evaluate the subquestions obtained from the LLM
+
+        Args:
+            question (str): The question to process
+            subquestions (list): The list of sub-questions
+
+        Returns:
+            str: The evaluation result
         """
         template = """Here is a question and the subquestions that were generated:
         Question: {question}
