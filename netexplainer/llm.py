@@ -1,12 +1,124 @@
 import os
 from dotenv import load_dotenv
 from langchain_community.document_loaders import TextLoader
+from langchain_core.output_parsers import StrOutputParser
+from langchain.prompts import ChatPromptTemplate
 from langchain_google_genai import ChatGoogleGenerativeAI
 
 
 class LLM:
-    def __init__(self, data_path):
+    def __init__(self, data_path: str):
+        """
+        Initialize the LLM object with the file provided
+        Args:
+            data_path (str): The path of the file to process
+        """
+        if not os.path.exists(data_path):
+            raise FileNotFoundError(f'The path {data_path} does not exist')
+        elif not os.path.isfile(data_path):
+            raise FileExistsError(f'The path {data_path} is not a file, please provide a file')
+        elif not data_path.endswith('.txt'):
+            raise TypeError(f'The file {data_path} is not a text file, please provide a txt file')
+
         load_dotenv()
+        self.model = None
+        loader = TextLoader(data_path)
+        self.file = loader.load()
+
+    def get_subquestions(self, question: str) -> list:
+        """
+        Get sub-questions from the LLM
+        Args:
+            question (str): The question to process
+        Returns:
+            list: A list of sub-questions
+        """
+        template = """You are a network analyst that generates multiple sub-questions related to an input question about a network trace.
+        I do not need the answer to the question. The ouput should only contain the sub-questions. Be as simple as possible. 
+        3 sub-questions as maximum. The sub-questions cannot answer directly the input question.
+        Input question: {question}"""
+        prompt_decomposition = ChatPromptTemplate.from_template(template)
+
+        generate_queries_decomposition = ( prompt_decomposition | self.model | StrOutputParser() | (lambda x: x.split("\n")))
+        sub_questions = generate_queries_decomposition.invoke({"question":question})
+
+        return sub_questions
+
+    def answer_subquestion(self, question: str) -> str:
+        """
+        Answer the sub-question using the LLM
+        Args:
+            question (str): The question to process
+        Returns:
+            str: The answer to the question
+        """
+        template = """You are a network analyst that answer questions about network traces.
+        Use the following network trace to answer the questions.
+        If you don't know the answer, just say that you don't know. Keep the answer as concise as possible.
+        Question: {question}
+        Traces: {traces}
+        Answer:"""
+
+        prompt = ChatPromptTemplate.from_template(template)
+
+        chain = (
+            prompt
+            | self.model
+            | StrOutputParser()
+        )
+
+        answer = chain.invoke({"traces": self.file[0].page_content, "question": question})
+
+        return answer
+
+    def format_qa_pairs(self, questions: list, answers: list) -> str:
+        """
+        Format the questions and answers into a string
+        Args:
+            questions (list): The list of questions
+            answers (list): The list of answers
+        Returns:
+            str: The formatted string
+        """
+        formatted_string = ""
+        for i, (question, answer) in enumerate(zip(questions, answers), start=1):
+            formatted_string += f"Question {i}: {question}\nAnswer {i}: {answer}\n\n"
+        return formatted_string.strip()
+
+    def get_final_answer(self, question:str, subquestions: list, answers: list) -> str:
+        """
+        Combine the questions and answers to get a final answer
+        Args:
+            question (str): The question to process
+            subquestions (list): The list of sub-questions
+            answers (list): The list of answers to the sub-questions
+        Returns:
+            str: The final answer
+        """
+        template = """Here is a set of Q+A pairs:
+        {context}
+        Use these to synthesize an answer to the question: {question}"""
+        prompt = ChatPromptTemplate.from_template(template)
+        chain = (
+            prompt
+            | self.model
+            | StrOutputParser()
+        )
+        final_answer = chain.invoke({"context": self.format_qa_pairs(subquestions, answers), "question": question})
+        return final_answer
+
+
+class LLM_GEMINI(LLM):
+    """
+    Class for Google Gemini LLM
+    """
+    def __init__(self, data_path: str):
+        """
+        Initialize the LLM object with the file provided
+        Args:
+            data_path (str): The path of the file to process
+        """
+        super().__init__(data_path)
         os.environ["GOOGLE_API_KEY"] = os.getenv("GOOGLE_API_KEY")
 
         self.model = ChatGoogleGenerativeAI(
@@ -15,8 +127,4 @@ class LLM:
             max_tokens=None,
             timeout=None,
             max_retries=2,
-            # other params...
         )
-
-        loader = TextLoader(data_path)
-        self.file = loader.load()
