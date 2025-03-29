@@ -26,7 +26,14 @@ class LLM:
         self.file = loader.load()
 
     def format_qa_pairs(self, questions: list, answers: list) -> str:
-        """Format Q and A pairs"""
+        """
+        Format the questions and answers into a string
+        Args:
+            questions (list): The list of questions
+            answers (list): The list of answers
+        Returns:
+            str: The formatted string
+        """
         formatted_string = ""
         for i, (question, answer) in enumerate(zip(questions, answers), start=1):
             formatted_string += f"Question {i}: {question}\nAnswer {i}: {answer}\n\n"
@@ -49,6 +56,33 @@ class LLM:
         sub_questions = generate_queries_decomposition.invoke({"question":question})
 
         return sub_questions
+
+    def answer_question(self, question: str) -> str:
+        """
+        Answer the question using the LLM
+        Args:
+            question (str): The question to process
+        Returns:
+            str: The answer to the question
+        """
+        template = """You are a network analyst that answer questions about network traces.
+        Use the following network trace to answer the questions.
+        If you don't know the answer, just say that you don't know. Keep the answer as concise as possible.
+        Question: {question}
+        Traces: {traces}
+        Answer:"""
+
+        prompt = ChatPromptTemplate.from_template(template)
+
+        chain = (
+            prompt
+            | self.model
+            | StrOutputParser()
+        )
+
+        answer = chain.invoke({"traces": self.file[0].page_content, "question": question})
+
+        return answer
 
 class LLM_GEMINI(LLM):
     """
