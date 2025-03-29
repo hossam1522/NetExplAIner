@@ -23,7 +23,6 @@ install:
 	uv run pip install .
 
 test:
-	export PYTHONPATH=$(pwd)
 	uv run pytest
 
 run:
