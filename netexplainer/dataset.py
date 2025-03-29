@@ -1,4 +1,4 @@
-from scapy.all import rdpcap
+from scapy.all import rdpcap, IP
 import os
 from subprocess import check_output
 import re
@@ -109,10 +109,34 @@ class Dataset:
 
         return cap_formated
 
-    def __answer_question(self) -> None:
+    def __answer_question(self, file_path: str) -> None:
         """
         Answer the question using the processed file
+
+        Args:
+            file_path (str): The path of the file to process
         """
-        for question in self.questions:
+        packets = rdpcap(file_path)
+
+        for question in self.questions_subquestions.keys():
             if question == "What is the total number of packets in the trace?":
-                self.qa[question] = rdpcap(self.processed_file).count
+                self.questions_answers[question] = len(packets)
+
+            elif question == "How many unique communicators are present in the trace?":
+                unique_communicators = set()
+                for packet in packets:
+                    if IP in packet:
+                        unique_communicators.add(packet[IP].src)
+                        unique_communicators.add(packet[IP].dst)
+                self.questions_answers[question] = len(unique_communicators)
+
+            elif question == "What is the IP that participates the most in communications in the trace?":
+                ip_count = {}
+                for packet in packets:
+                    if IP in packet:
+                        src_ip = packet[IP].src
+                        dst_ip = packet[IP].dst
+                        ip_count[src_ip] = ip_count.get(src_ip, 0) + 1
+                        ip_count[dst_ip] = ip_count.get(dst_ip, 0) + 1
+                most_common_ip = max(ip_count, key=ip_count.get)
+                self.questions_answers[question] = most_common_ip
