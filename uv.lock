@@ -1341,15 +1341,13 @@ dependencies = [
     { name = "langchain-community" },
     { name = "langchain-core" },
     { name = "langchain-google-genai" },
+    { name = "pytest" },
     { name = "scapy" },
 ]
 
 [package.optional-dependencies]
 dev = [
     { name = "ruff" },
-]
-test = [
-    { name = "pytest" },
 ]
 
 [package.metadata]
@@ -1359,11 +1357,11 @@ requires-dist = [
     { name = "langchain-community" },
     { name = "langchain-core" },
     { name = "langchain-google-genai" },
-    { name = "pytest", marker = "extra == 'test'" },
+    { name = "pytest" },
     { name = "ruff", marker = "extra == 'dev'" },
     { name = "scapy" },
 ]
-provides-extras = ["test", "dev"]
+provides-extras = ["dev"]
 
 [[package]]
 name = "numpy"
