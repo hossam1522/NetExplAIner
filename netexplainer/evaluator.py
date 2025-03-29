@@ -3,6 +3,7 @@ from netexplainer.dataset import Dataset
 from langchain_core.output_parsers import StrOutputParser
 from langchain.prompts import ChatPromptTemplate
 
+
 class Evaluator:
     """
     Class for evaluating the LLM
