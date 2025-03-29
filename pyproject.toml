@@ -9,13 +9,16 @@ description = "Using LLMs to analyze network traces by decomposing queries in ma
 authors = [
     { name = "Hossam", email = "hossam@correo.ugr.es" }
 ]
-dependencies = ["scapy", "langchain", "langchain_google_genai", "langchain_community", "langchain_core", "chromadb"]
+dependencies = ["scapy", "pytest", "langchain", "langchain_google_genai", "langchain_community", "langchain_core", "chromadb"]
 requires-python = ">=3.10"
 readme = "README.md"
-license = { file = "LICENSE" }
 
 [tool.distutils.egg_info]
 egg_base = "/tmp"
 
+[tool.setuptools]
+py-modules = []
+
 [project.optional-dependencies]
+test = ["pytest"]
 dev = ["ruff"]
