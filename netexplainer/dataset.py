@@ -34,13 +34,13 @@ class Dataset:
             data = yaml.safe_load(file)
 
         self.questions_subquestions = {}
-        self.questions_answers = {}
 
         for item in data['questions']:
             question = item['question']
             subquestions = item['subquestions']
             self.questions_subquestions[question] = subquestions
 
+        self.questions_answers = self.__answer_question(self.__path)
         self.processed_file = self.__process_file(self.__path)
     
     def __process_file(self, file_path: str) -> str:
@@ -109,18 +109,22 @@ class Dataset:
 
         return cap_formated
 
-    def __answer_question(self, file_path: str) -> None:
+    def __answer_question(self, file_path: str) -> dict:
         """
         Answer the question using the processed file
 
         Args:
             file_path (str): The path of the file to process
+
+        Returns:
+            dict: Dictionary with the questions and answers
         """
         packets = rdpcap(file_path)
+        questions_answers = {}
 
         for question in self.questions_subquestions.keys():
             if question == "What is the total number of packets in the trace?":
-                self.questions_answers[question] = len(packets)
+                questions_answers[question] = len(packets)
 
             elif question == "How many unique communicators are present in the trace?":
                 unique_communicators = set()
@@ -128,7 +132,7 @@ class Dataset:
                     if IP in packet:
                         unique_communicators.add(packet[IP].src)
                         unique_communicators.add(packet[IP].dst)
-                self.questions_answers[question] = len(unique_communicators)
+                questions_answers[question] = len(unique_communicators)
 
             elif question == "What is the IP that participates the most in communications in the trace?":
                 ip_count = {}
@@ -139,17 +143,17 @@ class Dataset:
                         ip_count[src_ip] = ip_count.get(src_ip, 0) + 1
                         ip_count[dst_ip] = ip_count.get(dst_ip, 0) + 1
                 most_common_ip = max(ip_count, key=ip_count.get)
-                self.questions_answers[question] = most_common_ip
+                questions_answers[question] = most_common_ip
 
             elif question == "What is the total size of transmitted bytes?":
                 total_size = 0
                 for packet in packets:
                     total_size += len(packet)
-                self.questions_answers[question] = total_size
+                questions_answers[question] = total_size
 
             elif question == "What is the average size of packets in bytes?":
                 average_size = total_size / len(packets) if packets else 0
-                self.questions_answers[question] = average_size
+                questions_answers[question] = average_size
 
             elif question == "What predominates in the capture: ICMP, TCP, or UDP?":
                 protocol_count = {'ICMP': 0, 'TCP': 0, 'UDP': 0}
@@ -161,4 +165,20 @@ class Dataset:
                     elif UDP in packet:
                         protocol_count['UDP'] += 1
                 predominant_protocol = max(protocol_count, key=protocol_count.get)
-                self.questions_answers[question] = predominant_protocol
+                questions_answers[question] = predominant_protocol
+
+            elif question == "How long in seconds does the communication last?":
+                start_time = packets[0].time
+                end_time = packets[-1].time
+                duration = end_time - start_time
+                questions_answers[question] = duration
+
+            elif question == "What is the average number of packets sent per second?":
+                average_packets_per_second = len(packets) / duration if duration > 0 else 0
+                questions_answers[question] = average_packets_per_second
+
+            elif question == "What is the average bytes/s sent in the communication?":
+                average_bytes_per_second = total_size / duration if duration > 0 else 0
+                questions_answers[question] = average_bytes_per_second
+
+            return questions_answers
