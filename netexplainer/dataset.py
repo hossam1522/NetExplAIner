@@ -52,7 +52,7 @@ class Dataset:
         packets = self.__cap_to_str(file_path)
         txt_file_path = file_path.replace('.pcapng', '.txt').replace('.pcap', '.txt').replace('.cap', '.txt')
         with open(txt_file_path, 'w') as f:
-            f.write(f"No.|Time|Source|Destination|Protocol|Length|Info\n")
+            f.write("No.|Time|Source|Destination|Protocol|Length|Info\n")
             f.write(packets)
         return txt_file_path
 
