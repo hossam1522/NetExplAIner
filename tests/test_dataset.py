@@ -30,6 +30,7 @@ class TestDataset(unittest.TestCase):
     def test_process_file(self, mock_check_output):
         processed_path = self.dataset._Dataset__process_file("dummy.pcap")
         self.assertTrue(processed_path.endswith(".txt"))
+        os.remove(processed_path)
 
     def test_clean_cap_format(self):
         mocked_data = "1\t0.0\t192.168.1.1\t192.168.1.2\tTCP\t54\t[SYN]"

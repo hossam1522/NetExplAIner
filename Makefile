@@ -23,6 +23,7 @@ install:
 	uv run pip install .
 
 test:
+	export PYTHONPATH=$(shell pwd)
 	uv run pytest
 
 run:
@@ -30,6 +31,7 @@ run:
 
 dev:
 	uv venv dev
+	source dev/bin/activate
 	uv run pip install -e .[dev]
 
 clean:
