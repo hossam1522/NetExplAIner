@@ -61,6 +61,15 @@ class Dataset:
         return txt_file_path
 
     def __cap_to_str(self, file: str) -> str:
+        """
+        Convert the pcap file to a string using tshark
+
+        Args:
+            file (str): The path of the file to processç
+
+        Returns:
+            str: The capture in string format
+        """
         try:
             out = check_output(
                 [
@@ -76,6 +85,15 @@ class Dataset:
             raise Exception(f"Fail reading the file. ERROR: {e}")
 
     def __clean_cap_format(self, cap: str) -> str:
+        """
+        Clean the capture format to a more readable format
+
+        Args:
+            cap (str): The capture to clean
+
+        Returns:
+            str: The cleaned capture
+        """
         # Split the string by lines
         cap_lines = cap.strip().split("\n")
 
