@@ -16,3 +16,7 @@ license = { file = "LICENSE" }
 
 [tool.distutils.egg_info]
 egg_base = "/tmp"
+
+[project.optional-dependencies]
+testing = ["pytest"]
+dev = ["ruff"]
