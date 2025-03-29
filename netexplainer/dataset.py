@@ -138,7 +138,7 @@ class Dataset:
         Returns:
             dict: Dictionary with the questions and answers
         """
-        packets = rdpcap(file_path)
+        packets = rdpcap(file_path, count=11000)
         questions_answers = {}
 
         for question in self.questions_subquestions.keys():
@@ -200,4 +200,4 @@ class Dataset:
                 average_bytes_per_second = total_size / duration if duration > 0 else 0
                 questions_answers[question] = average_bytes_per_second
 
-            return questions_answers
+        return questions_answers
