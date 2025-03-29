@@ -25,20 +25,6 @@ class LLM:
         loader = TextLoader(data_path)
         self.file = loader.load()
 
-    def format_qa_pairs(self, questions: list, answers: list) -> str:
-        """
-        Format the questions and answers into a string
-        Args:
-            questions (list): The list of questions
-            answers (list): The list of answers
-        Returns:
-            str: The formatted string
-        """
-        formatted_string = ""
-        for i, (question, answer) in enumerate(zip(questions, answers), start=1):
-            formatted_string += f"Question {i}: {question}\nAnswer {i}: {answer}\n\n"
-        return formatted_string.strip()
-
     def get_subquestions(self, question: str) -> list:
         """
         Get sub-questions from the LLM
@@ -83,6 +69,43 @@ class LLM:
         answer = chain.invoke({"traces": self.file[0].page_content, "question": question})
 
         return answer
+
+    def format_qa_pairs(self, questions: list, answers: list) -> str:
+        """
+        Format the questions and answers into a string
+        Args:
+            questions (list): The list of questions
+            answers (list): The list of answers
+        Returns:
+            str: The formatted string
+        """
+        formatted_string = ""
+        for i, (question, answer) in enumerate(zip(questions, answers), start=1):
+            formatted_string += f"Question {i}: {question}\nAnswer {i}: {answer}\n\n"
+        return formatted_string.strip()
+
+    def combine_qa_pairs(self, question:str, subquestions: list, answers: list) -> str:
+        """
+        Combine the questions and answers to get a final answer
+        Args:
+            question (str): The question to process
+            subquestions (list): The list of sub-questions
+            answers (list): The list of answers to the sub-questions
+        Returns:
+            str: The final answer
+        """
+        template = """Here is a set of Q+A pairs:
+        {context}
+        Use these to synthesize an answer to the question: {question}"""
+        prompt = ChatPromptTemplate.from_template(template)
+        chain = (
+            prompt
+            | self.model
+            | StrOutputParser()
+        )
+        final_answer = chain.invoke({"context": self.format_qa_pairs(subquestions, answers), "question": question})
+        return final_answer
+
 
 class LLM_GEMINI(LLM):
     """
