@@ -1,6 +1,6 @@
 import unittest
 import os
-from unittest.mock import patch, mock_open, MagicMock
+from unittest.mock import patch, mock_open
 from netexplainer.dataset import Dataset
 
 class TestDataset(unittest.TestCase):
