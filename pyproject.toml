@@ -20,4 +20,5 @@ egg_base = "/tmp"
 py-modules = []
 
 [project.optional-dependencies]
+test = ["pytest"]
 dev = ["ruff"]
