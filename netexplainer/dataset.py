@@ -6,7 +6,7 @@ import yaml
 
 
 class Dataset:
-    def __init__(self, file_path: str, questions_path: str):
+    def __init__(self, file_path: str, questions_path: str, max_packets: int):
         """
         Initialize the dataset object with the file provided
 
@@ -43,6 +43,7 @@ class Dataset:
 
         self.questions_answers = self.__answer_question(self.__path)
         self.processed_file = self.__process_file(self.__path)
+        self.max_packets = max_packets
     
     def __process_file(self, file_path: str) -> str:
         """
@@ -105,7 +106,7 @@ class Dataset:
         num = 0
 
         for line in cap_lines:
-            if num < 11000:
+            if num < self.max_packets:
                 columns = re.split(match_tabs, line.strip())
 
                 if "\u2192" in columns:
@@ -138,7 +139,7 @@ class Dataset:
         Returns:
             dict: Dictionary with the questions and answers
         """
-        packets = rdpcap(file_path, count=11000)
+        packets = rdpcap(file_path, count=self.max_packets)
         questions_answers = {}
 
         for question in self.questions_subquestions.keys():

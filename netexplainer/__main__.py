@@ -3,7 +3,7 @@ from netexplainer.llm import LLM_GEMINI
 from netexplainer.evaluator import Evaluator
 import time
 
-dataset = Dataset('netexplainer/downloads/data.pcap', 'netexplainer/questions/questions.yaml')
+dataset = Dataset('netexplainer/downloads/data.pcap', 'netexplainer/questions/questions.yaml', 11000)
 llm = LLM_GEMINI(dataset.processed_file)
 evaluator = Evaluator(dataset)
 
