@@ -1,6 +1,6 @@
 import unittest
 import os
-from unittest.mock import patch, mock_open, MagicMock
+from unittest.mock import patch, mock_open
 from netexplainer.dataset import Dataset
 
 class TestDataset(unittest.TestCase):
@@ -27,9 +27,14 @@ class TestDataset(unittest.TestCase):
             self.assertEqual(dataset._Dataset__path, os.path.abspath("dummy.pcap"))
 
     @patch("netexplainer.dataset.check_output", return_value=b"Mocked Data")
-    def test_process_file(self, mock_check_output):
+    @patch("builtins.open", new_callable=mock_open)
+    def test_process_file(self, mock_file, mock_check_output):
         processed_path = self.dataset._Dataset__process_file("dummy.pcap")
         self.assertTrue(processed_path.endswith(".txt"))
+        mock_file.assert_called_once_with(processed_path, 'w')
+        handle = mock_file()
+        handle.write.assert_any_call("No.|Time|Source|Destination|Protocol|Length|Info\n")
+        handle.write.assert_any_call("Mocked Data\n")
 
     def test_clean_cap_format(self):
         mocked_data = "1\t0.0\t192.168.1.1\t192.168.1.2\tTCP\t54\t[SYN]"
