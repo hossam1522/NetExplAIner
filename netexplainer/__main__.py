@@ -14,9 +14,8 @@ def format_qa_pairs(questions, answers):
     return formatted_string.strip()
 
 
-
 def main():
-    dataset = Dataset('downloads/data.pcap')
+    dataset = Dataset('netexplainer/downloads/data.pcap', 'netexplainer/questions/questions.yaml')
     llm = LLM(dataset.processed_file)
 
     template = """You are a network analyst that generates multiple sub-questions related to an input question about a network trace.
@@ -41,7 +40,7 @@ def main():
     for sub_question in sub_questions:
         time.sleep(60)
         print(sub_question)
-        context = llm.file.read()
+        context = llm.file[0].page_content
         answer = (prompt | llm.model | StrOutputParser()).invoke({"traces": context,
                                                                         "question": sub_question})
         print(answer)
