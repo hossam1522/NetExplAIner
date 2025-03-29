@@ -1,4 +1,4 @@
-from scapy.all import rdpcap, IP
+from scapy.all import rdpcap, IP, ICMP, TCP, UDP
 import os
 from subprocess import check_output
 import re
@@ -140,3 +140,25 @@ class Dataset:
                         ip_count[dst_ip] = ip_count.get(dst_ip, 0) + 1
                 most_common_ip = max(ip_count, key=ip_count.get)
                 self.questions_answers[question] = most_common_ip
+
+            elif question == "What is the total size of transmitted bytes?":
+                total_size = 0
+                for packet in packets:
+                    total_size += len(packet)
+                self.questions_answers[question] = total_size
+
+            elif question == "What is the average size of packets in bytes?":
+                average_size = total_size / len(packets) if packets else 0
+                self.questions_answers[question] = average_size
+
+            elif question == "What predominates in the capture: ICMP, TCP, or UDP?":
+                protocol_count = {'ICMP': 0, 'TCP': 0, 'UDP': 0}
+                for packet in packets:
+                    if ICMP in packet:
+                        protocol_count['ICMP'] += 1
+                    elif TCP in packet:
+                        protocol_count['TCP'] += 1
+                    elif UDP in packet:
+                        protocol_count['UDP'] += 1
+                predominant_protocol = max(protocol_count, key=protocol_count.get)
+                self.questions_answers[question] = predominant_protocol
