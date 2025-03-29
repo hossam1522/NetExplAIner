@@ -30,7 +30,7 @@ run:
 
 dev:
 	uv venv dev
-	source dev/bin/activate
+	. dev/bin/activate
 	uv run pip install -e .[dev]
 
 clean:
