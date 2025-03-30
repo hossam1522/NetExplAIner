@@ -10,6 +10,26 @@ from langchain_groq import ChatGroq
 from langchain_core.tools import tool
 
 
+@tool
+def calculator(expression: str) -> str:
+    """Calculate expression using Python's numexpr library.
+
+    Expression should be a single line mathematical expression
+    that solves the problem.
+
+    Examples:
+        "37593 * 67" for "37593 times 67"
+        "37593**(1/5)" for "37593^(1/5)"
+    """
+    local_dict = {"pi": math.pi, "e": math.e}
+    return str(
+        numexpr.evaluate(
+            expression.strip(),
+            global_dict={},  # restrict access to globals
+            local_dict=local_dict,  # add common mathematical functions
+        )
+    )
+
 class LLM:
     def __init__(self, data_path: str, tools: bool = False):
         """
@@ -111,26 +131,6 @@ class LLM:
         final_answer = chain.invoke({"context": self.format_qa_pairs(subquestions, answers), "question": question})
         return final_answer
 
-    @tool
-    def __calculator(expression: str) -> str:
-        """Calculate expression using Python's numexpr library.
-
-        Expression should be a single line mathematical expression
-        that solves the problem.
-
-        Examples:
-            "37593 * 67" for "37593 times 67"
-            "37593**(1/5)" for "37593^(1/5)"
-        """
-        local_dict = {"pi": math.pi, "e": math.e}
-        return str(
-            numexpr.evaluate(
-                expression.strip(),
-                global_dict={},  # restrict access to globals
-                local_dict=local_dict,  # add common mathematical functions
-            )
-        )
-
 
 class LLM_GEMINI(LLM):
     """
@@ -157,7 +157,7 @@ class LLM_GEMINI(LLM):
             self.model = llm
         else:
             self.model = llm.bind_tools(
-                tools=[self.__calculator],
+                tools=[calculator],
                 tool_names=["calculator"]
             )
 
@@ -183,7 +183,7 @@ class LLM_QWEN_2_5_32B(LLM):
             self.model = llm
         else:
             self.model = llm.bind_tools(
-                tools=[self.__calculator],
+                tools=[calculator],
                 tool_names=["calculator"]
             )
 
@@ -210,7 +210,7 @@ class LLM_LLAMA_3_3_70B_VERSATILE(LLM):
             self.model = llm
         else:
             self.model = llm.bind_tools(
-                tools=[self.__calculator],
+                tools=[calculator],
                 tool_names=["calculator"]
             )
 
@@ -236,6 +236,6 @@ class LLM_MISTRAL_SABA_24B(LLM):
             self.model = llm
         else:
             self.model = llm.bind_tools(
-                tools=[self.__calculator],
+                tools=[calculator],
                 tool_names=["calculator"]
             )
