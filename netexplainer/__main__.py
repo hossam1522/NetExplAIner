@@ -1,11 +1,13 @@
 from netexplainer.dataset import Dataset
-from netexplainer.llm import LLM_GEMINI, LLM_QWEN_2_5_32B
+from netexplainer.llm import *
 from netexplainer.evaluator import Evaluator
 import time
 
 dataset = Dataset('netexplainer/downloads/data.pcap', 'netexplainer/questions/questions.yaml', 128)
 #llm = LLM_GEMINI(dataset.processed_file)
-llm = LLM_QWEN_2_5_32B(dataset.processed_file)
+#llm = LLM_QWEN_2_5_32B(dataset.processed_file)
+#llm = LLM_LLAMA_3_3_70B_VERSATILE(dataset.processed_file)
+llm = LLM_MISTRAL_SABA_24B(dataset.processed_file)
 evaluator = Evaluator(dataset)
 
 results = []

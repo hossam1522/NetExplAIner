@@ -147,3 +147,40 @@ class LLM_QWEN_2_5_32B(LLM):
             model="qwen-2.5-32b",
             temperature=0,
         )
+
+
+class LLM_LLAMA_3_3_70B_VERSATILE(LLM):
+    """
+    Class for Llama 3.3 70B Versatile LLM
+    """
+    def __init__(self, data_path: str):
+        """
+        Initialize the LLM object with the file provided
+        Args:
+            data_path (str): The path of the file to process
+        """
+        super().__init__(data_path)
+        os.environ["GROQ_API_KEY"] = os.getenv("GROQ_API_KEY")
+
+        self.model = ChatGroq(
+            model="llama-3.3-70b-versatile",
+            temperature=0,
+        )
+
+class LLM_MISTRAL_SABA_24B(LLM):
+    """
+    Class for Mistral Saba 24B LLM
+    """
+    def __init__(self, data_path: str):
+        """
+        Initialize the LLM object with the file provided
+        Args:
+            data_path (str): The path of the file to process
+        """
+        super().__init__(data_path)
+        os.environ["GROQ_API_KEY"] = os.getenv("GROQ_API_KEY")
+
+        self.model = ChatGroq(
+            model="mistral-saba-24b",
+            temperature=0,
+        )
