@@ -767,6 +767,23 @@ wheels = [
 ]
 
 [[package]]
+name = "groq"
+version = "0.20.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "anyio" },
+    { name = "distro" },
+    { name = "httpx" },
+    { name = "pydantic" },
+    { name = "sniffio" },
+    { name = "typing-extensions" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/8f/fc/e5a03586ffad7ae6c7996f388ca321a3bf8b9fa544a36a934ce4b6b44211/groq-0.20.0.tar.gz", hash = "sha256:2a201d41cae768c53d411dabcfea2333e2e138df22d909ed555ece426f1e016f", size = 121936 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/95/37/9b415df5dd1e6a685d3e8fd4e564a5e80f4f87c19d82829ad027fa2bb150/groq-0.20.0-py3-none-any.whl", hash = "sha256:c27b89903eb2b77f94ed95837ff3cadfc8c9e670953b1c5e5e2e855fea54b6c5", size = 124919 },
+]
+
+[[package]]
 name = "grpcio"
 version = "1.71.0"
 source = { registry = "https://pypi.org/simple" }
@@ -1098,6 +1115,19 @@ wheels = [
 ]
 
 [[package]]
+name = "langchain-groq"
+version = "0.3.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "groq" },
+    { name = "langchain-core" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/8b/97/1a965f0dfdba5a2737d511ec76160c943e61ed8cd5f9e06bde5991a1dd5f/langchain_groq-0.3.0.tar.gz", hash = "sha256:9da0ac12a59e10a0005da5b71a1afc67d6b64061593321f8020cd26dfda5f172", size = 21819 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/7e/50/99dfe85a63be79f583c0943ea87b305a53cf8ad7303b367f8ec65aaad8cd/langchain_groq-0.3.0-py3-none-any.whl", hash = "sha256:ed332e731e1013e0834641bbadd27526f61a6c5d2f2e48cf14d1ee6929afc2ce", size = 15011 },
+]
+
+[[package]]
 name = "langchain-text-splitters"
 version = "0.3.6"
 source = { registry = "https://pypi.org/simple" }
@@ -1341,6 +1371,7 @@ dependencies = [
     { name = "langchain-community" },
     { name = "langchain-core" },
     { name = "langchain-google-genai" },
+    { name = "langchain-groq" },
     { name = "pytest" },
     { name = "scapy" },
 ]
@@ -1357,6 +1388,7 @@ requires-dist = [
     { name = "langchain-community" },
     { name = "langchain-core" },
     { name = "langchain-google-genai" },
+    { name = "langchain-groq" },
     { name = "pytest" },
     { name = "ruff", marker = "extra == 'dev'" },
     { name = "scapy" },

@@ -41,9 +41,9 @@ class Dataset:
             subquestions = item['subquestions']
             self.questions_subquestions[question] = subquestions
 
+        self.max_packets = max_packets
         self.questions_answers = self.__answer_question(self.__path)
         self.processed_file = self.__process_file(self.__path)
-        self.max_packets = max_packets
     
     def __process_file(self, file_path: str) -> str:
         """

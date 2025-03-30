@@ -4,6 +4,7 @@ from langchain_community.document_loaders import TextLoader
 from langchain_core.output_parsers import StrOutputParser
 from langchain.prompts import ChatPromptTemplate
 from langchain_google_genai import ChatGoogleGenerativeAI
+from langchain_groq import ChatGroq
 
 
 class LLM:
@@ -127,4 +128,22 @@ class LLM_GEMINI(LLM):
             max_tokens=None,
             timeout=None,
             max_retries=2,
+        )
+
+class LLM_QWEN_2_5_32B(LLM):
+    """
+    Class for Google Gemini LLM
+    """
+    def __init__(self, data_path: str):
+        """
+        Initialize the LLM object with the file provided
+        Args:
+            data_path (str): The path of the file to process
+        """
+        super().__init__(data_path)
+        os.environ["GROQ_API_KEY"] = os.getenv("GROQ_API_KEY")
+
+        self.model = ChatGroq(
+            model="qwen-2.5-32b",
+            temperature=0,
         )
