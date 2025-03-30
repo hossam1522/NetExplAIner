@@ -11,7 +11,7 @@ from langchain_core.tools import tool
 
 
 class LLM:
-    def __init__(self, data_path: str, tools: bool = None):
+    def __init__(self, data_path: str, tools: bool = False):
         """
         Initialize the LLM object with the file provided
         Args:
@@ -136,7 +136,7 @@ class LLM_GEMINI(LLM):
     """
     Class for Google Gemini LLM
     """
-    def __init__(self, data_path: str, tools: bool = None):
+    def __init__(self, data_path: str, tools: bool = False):
         """
         Initialize the LLM object with the file provided
         Args:
@@ -165,7 +165,7 @@ class LLM_QWEN_2_5_32B(LLM):
     """
     Class for Google Gemini LLM
     """
-    def __init__(self, data_path: str, tools: bool = None):
+    def __init__(self, data_path: str, tools: bool = False):
         """
         Initialize the LLM object with the file provided
         Args:
@@ -192,7 +192,7 @@ class LLM_LLAMA_3_3_70B_VERSATILE(LLM):
     """
     Class for Llama 3.3 70B Versatile LLM
     """
-    def __init__(self, data_path: str, tools: bool = None):
+    def __init__(self, data_path: str, tools: bool = False):
         """
         Initialize the LLM object with the file provided
         Args:
@@ -218,7 +218,7 @@ class LLM_MISTRAL_SABA_24B(LLM):
     """
     Class for Mistral Saba 24B LLM
     """
-    def __init__(self, data_path: str, tools: bool = None):
+    def __init__(self, data_path: str, tools: bool = False):
         """
         Initialize the LLM object with the file provided
         Args:
