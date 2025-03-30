@@ -1,14 +1,17 @@
 import os
+import math
+import numexpr
 from dotenv import load_dotenv
 from langchain_community.document_loaders import TextLoader
 from langchain_core.output_parsers import StrOutputParser
 from langchain.prompts import ChatPromptTemplate
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_groq import ChatGroq
+from langchain_core.tools import tool
 
 
 class LLM:
-    def __init__(self, data_path: str):
+    def __init__(self, data_path: str, tools: bool = None):
         """
         Initialize the LLM object with the file provided
         Args:
@@ -108,12 +111,32 @@ class LLM:
         final_answer = chain.invoke({"context": self.format_qa_pairs(subquestions, answers), "question": question})
         return final_answer
 
+    @tool
+    def __calculator(expression: str) -> str:
+        """Calculate expression using Python's numexpr library.
+
+        Expression should be a single line mathematical expression
+        that solves the problem.
+
+        Examples:
+            "37593 * 67" for "37593 times 67"
+            "37593**(1/5)" for "37593^(1/5)"
+        """
+        local_dict = {"pi": math.pi, "e": math.e}
+        return str(
+            numexpr.evaluate(
+                expression.strip(),
+                global_dict={},  # restrict access to globals
+                local_dict=local_dict,  # add common mathematical functions
+            )
+        )
+
 
 class LLM_GEMINI(LLM):
     """
     Class for Google Gemini LLM
     """
-    def __init__(self, data_path: str):
+    def __init__(self, data_path: str, tools: bool = None):
         """
         Initialize the LLM object with the file provided
         Args:
@@ -122,7 +145,7 @@ class LLM_GEMINI(LLM):
         super().__init__(data_path)
         os.environ["GOOGLE_API_KEY"] = os.getenv("GOOGLE_API_KEY")
 
-        self.model = ChatGoogleGenerativeAI(
+        llm = ChatGoogleGenerativeAI(
             model="gemini-2.0-flash",
             temperature=0,
             max_tokens=None,
@@ -130,11 +153,19 @@ class LLM_GEMINI(LLM):
             max_retries=2,
         )
 
+        if not tools:
+            self.model = llm
+        else:
+            self.model = llm.bind_tools(
+                tools=[self.__calculator],
+                tool_names=["calculator"]
+            )
+
 class LLM_QWEN_2_5_32B(LLM):
     """
     Class for Google Gemini LLM
     """
-    def __init__(self, data_path: str):
+    def __init__(self, data_path: str, tools: bool = None):
         """
         Initialize the LLM object with the file provided
         Args:
@@ -143,17 +174,25 @@ class LLM_QWEN_2_5_32B(LLM):
         super().__init__(data_path)
         os.environ["GROQ_API_KEY"] = os.getenv("GROQ_API_KEY")
 
-        self.model = ChatGroq(
+        llm = ChatGroq(
             model="qwen-2.5-32b",
             temperature=0,
         )
+
+        if not tools:
+            self.model = llm
+        else:
+            self.model = llm.bind_tools(
+                tools=[self.__calculator],
+                tool_names=["calculator"]
+            )
 
 
 class LLM_LLAMA_3_3_70B_VERSATILE(LLM):
     """
     Class for Llama 3.3 70B Versatile LLM
     """
-    def __init__(self, data_path: str):
+    def __init__(self, data_path: str, tools: bool = None):
         """
         Initialize the LLM object with the file provided
         Args:
@@ -162,16 +201,24 @@ class LLM_LLAMA_3_3_70B_VERSATILE(LLM):
         super().__init__(data_path)
         os.environ["GROQ_API_KEY"] = os.getenv("GROQ_API_KEY")
 
-        self.model = ChatGroq(
+        llm = ChatGroq(
             model="llama-3.3-70b-versatile",
             temperature=0,
         )
+
+        if not tools:
+            self.model = llm
+        else:
+            self.model = llm.bind_tools(
+                tools=[self.__calculator],
+                tool_names=["calculator"]
+            )
 
 class LLM_MISTRAL_SABA_24B(LLM):
     """
     Class for Mistral Saba 24B LLM
     """
-    def __init__(self, data_path: str):
+    def __init__(self, data_path: str, tools: bool = None):
         """
         Initialize the LLM object with the file provided
         Args:
@@ -180,7 +227,15 @@ class LLM_MISTRAL_SABA_24B(LLM):
         super().__init__(data_path)
         os.environ["GROQ_API_KEY"] = os.getenv("GROQ_API_KEY")
 
-        self.model = ChatGroq(
+        llm = ChatGroq(
             model="mistral-saba-24b",
             temperature=0,
         )
+
+        if not tools:
+            self.model = llm
+        else:
+            self.model = llm.bind_tools(
+                tools=[self.__calculator],
+                tool_names=["calculator"]
+            )

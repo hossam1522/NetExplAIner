@@ -4,10 +4,10 @@ from netexplainer.evaluator import Evaluator
 import time
 
 dataset = Dataset('netexplainer/downloads/data.pcap', 'netexplainer/questions/questions.yaml', 128)
-#llm = LLM_GEMINI(dataset.processed_file)
+llm = LLM_GEMINI(dataset.processed_file)
 #llm = LLM_QWEN_2_5_32B(dataset.processed_file)
 #llm = LLM_LLAMA_3_3_70B_VERSATILE(dataset.processed_file)
-llm = LLM_MISTRAL_SABA_24B(dataset.processed_file)
+#llm = LLM_MISTRAL_SABA_24B(dataset.processed_file)
 evaluator = Evaluator(dataset)
 
 results = []
@@ -16,7 +16,7 @@ for question in dataset.questions_subquestions.keys():
     subquestions = llm.get_subquestions(question)
     answers = []
     for subquestion in subquestions:
-        time.sleep(120)
+        time.sleep(60)
         answer = llm.answer_subquestion(subquestion)
         answers.append(answer)
 
