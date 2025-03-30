@@ -158,7 +158,6 @@ class LLM_GEMINI(LLM):
         else:
             self.model = llm.bind_tools(
                 tools=[calculator],
-                tool_names=["calculator"]
             )
 
 class LLM_QWEN_2_5_32B(LLM):
@@ -184,7 +183,6 @@ class LLM_QWEN_2_5_32B(LLM):
         else:
             self.model = llm.bind_tools(
                 tools=[calculator],
-                tool_names=["calculator"]
             )
 
 
@@ -211,7 +209,6 @@ class LLM_LLAMA_3_3_70B_VERSATILE(LLM):
         else:
             self.model = llm.bind_tools(
                 tools=[calculator],
-                tool_names=["calculator"]
             )
 
 class LLM_MISTRAL_SABA_24B(LLM):
@@ -237,5 +234,4 @@ class LLM_MISTRAL_SABA_24B(LLM):
         else:
             self.model = llm.bind_tools(
                 tools=[calculator],
-                tool_names=["calculator"]
             )
