@@ -31,7 +31,7 @@ def calculator(expression: str) -> str:
     )
 
 class LLM:
-    def __init__(self, data_path: str, tools: bool = False):
+    def __init__(self, data_path: str):
         """
         Initialize the LLM object with the file provided
         Args:
