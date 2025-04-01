@@ -186,7 +186,7 @@ class LLM_QWEN_2_5_32B(LLM):
             )
 
 
-class LLM_LLAMA_3_3_70B_VERSATILE(LLM):
+class LLM_LLAMA_3_8B(LLM):
     """
     Class for Llama 3.3 70B Versatile LLM
     """
@@ -200,7 +200,7 @@ class LLM_LLAMA_3_3_70B_VERSATILE(LLM):
         os.environ["GROQ_API_KEY"] = os.getenv("GROQ_API_KEY")
 
         llm = ChatGroq(
-            model="llama-3.3-70b-versatile",
+            model="llama3-8b-8192",
             temperature=0,
         )
 
