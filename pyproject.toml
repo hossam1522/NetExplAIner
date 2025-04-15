@@ -19,7 +19,8 @@ dependencies = [
     "chromadb",
     "langchain-groq",
     "numexpr",
-    "langchain-mistralai"
+    "langchain-mistralai",
+    "pandas"
 ]
 requires-python = ">=3.10"
 readme = "README.md"

@@ -1,16 +1,15 @@
+import argparse
+import yaml
+import os
+import sys
+import time
+import pandas as pd
 from netexplainer.dataset import Dataset
 from netexplainer.llm import models
 from netexplainer.evaluator import Evaluator
 from netexplainer.scraper import Scraper
-import argparse
-import yaml
-import os
-import time
 
 QUESTIONS_PATH = "netexplainer/data/questions.yaml"
-with open(QUESTIONS_PATH, 'r') as file:
-    data = yaml.safe_load(file)
-    models_to_evaluate = data['models']
 
 def evaluate_without_tools() -> None:
     """
@@ -36,9 +35,15 @@ if __name__ == "__main__":
     if args.download_data:
         scraper = Scraper()
         scraper.download_captures()
+        sys.exit(0)
     elif args.clean_data:
         max_packets = args.clean_data
         scraper = Scraper()
         scraper.clean_raw_data(max_packets=max_packets)
+        sys.exit(0)
+
+    with open(QUESTIONS_PATH, 'r') as file:
+        data = yaml.safe_load(file)
+        models_to_evaluate = data['models']
 
     evaluate_without_tools()
