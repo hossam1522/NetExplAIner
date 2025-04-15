@@ -5,7 +5,7 @@ from netexplainer.scraper import Scraper
 import argparse
 import time
 
-
+QUESTIONS_PATH = "netexplainer/data/questions.yaml"
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
