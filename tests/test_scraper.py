@@ -1,9 +1,6 @@
 import os
-import pytest
 from unittest.mock import patch, MagicMock, Mock
 from scapy.error import Scapy_Exception
-
-# Update this import to match your actual project structure
 from netexplainer.scraper import Scraper, DATASET_PATH, CLEANED_PATH
 
 def test_get_download_urls():
@@ -14,7 +11,7 @@ def test_get_download_urls():
     <a href="/test2.cap">Link2</a>
     <a href="https://external.com/test3.pcapng">Link3</a>
     '''
-    
+
     expected_urls = {
         'https://wiki.wireshark.org/test1.pcap',
         'https://wiki.wireshark.org/test2.cap',
@@ -28,17 +25,17 @@ def test_get_download_urls():
 def test_download_captures(tmpdir):
     """Test file downloading functionality"""
     test_urls = ['http://example.com/file.pcap']
-    
+
     with patch.object(Scraper, '_Scraper__get_download_urls', return_value=test_urls):
         mock_response = Mock()
         mock_response.content = b'file content'
-        
+
         with patch('requests.get', return_value=mock_response), \
              patch('netexplainer.scraper.DATASET_PATH', str(tmpdir)):
-            
+
             scraper = Scraper()
             scraper.download_captures()
-            
+
             assert os.listdir(str(tmpdir)) == ['file.pcap']
             with open(os.path.join(str(tmpdir), 'file.pcap'), 'rb') as f:
                 assert f.read() == b'file content'
@@ -71,7 +68,6 @@ def test_clean_raw_data_packet_count(tmpdir):
     (raw_path / "small.pcap").write("")
     (raw_path / "large.pcap").write("")
 
-    mock_packets = MagicMock()
     def mock_rdpcap(path):
         mock = MagicMock()
         if "small" in path:
