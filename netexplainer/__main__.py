@@ -18,6 +18,8 @@ def evaluate_without_tools() -> None:
     """
     for model in models_to_evaluate:
         for file in os.listdir("netexplainer/data/cleaned/"):
+            if file.endswith(".txt"):
+                continue
             dataset = Dataset(os.path.join("netexplainer/data/cleaned/", file), QUESTIONS_PATH)
             llm = models[f"{model}"](dataset.processed_file)
 
