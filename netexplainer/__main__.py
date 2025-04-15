@@ -47,7 +47,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
 
     group = parser.add_mutually_exclusive_group()
-    group.add_argument("--download-data", action="store_true", help="Download network data from Wireshark")
+    group.add_argument("--download-data", action="store_true", help="Download network files from Wireshark samples")
     group.add_argument("--clean-data", type=int, metavar="<N>", help="Keep network files with a maximum of N packets")
 
     args = parser.parse_args()

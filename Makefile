@@ -1,4 +1,4 @@
-.PHONY: help check install test install-uv run dev clean
+.PHONY: help check install test install-uv run dev clean download-data clean-data
 
 help:
 	@echo "Usage: make [target]"
@@ -8,6 +8,8 @@ help:
 	@echo "  install-uv    	Install the uv package manager (required)"
 	@echo "  install       	Install the package and its dependencies"
 	@echo "  test          	Run the tests"
+	@echo "  download-data  	Download network files from Wireshark samples"
+	@echo "  clean-data N=<number>	Keep network files with a maximum of <number> packets"
 	@echo "  run           	Run the program"
 	@echo "  dev           	Create a development environment"
 	@echo "  clean         	Remove build artifacts"
@@ -27,6 +29,17 @@ test:
 
 run:
 	uv run python3 -m netexplainer
+
+download-data:
+	uv run python3 -m netexplainer --download-data
+
+clean-data:
+ifndef N
+	@echo "Error: The max packet number should be specified with N=<number>"
+	@exit 1
+else
+	uv run python3 -m netexplainer --clean-data $(N)
+endif
 
 dev:
 	uv venv dev

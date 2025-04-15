@@ -4,7 +4,8 @@ import requests
 import shutil
 from scapy.all import rdpcap
 
-DATASET_PATH = os.path.join(os.getcwd(), "data/raw")
+DATASET_PATH = os.path.join(os.getcwd(), "netexplainer/data/raw")
+CLEANED_PATH = os.path.join(os.getcwd(), "netexplainer/data/cleaned")
 
 class Scraper:
     def __init__(self):
@@ -56,16 +57,21 @@ class Scraper:
             except Exception as e:
                 print(f"Error downloading {url}: {str(e)}")
 
-    def clean_raw_data(data_path: str = DATASET_PATH, max_packets: int = 128) -> None:
+    def clean_raw_data(self, max_packets: int, data_path: str = DATASET_PATH) -> None:
         """
         Clean the raw data by filtering out files that are not in the correct format.
 
         Args:
-            data_path (str): The path to the raw data directory.
             max_packets (int): The maximum number of packets allowed in a capture file.
+            data_path (str): The path to the raw data directory.
         """
-        cleaned_path = os.path.join(os.getcwd(), "data/cleaned")
+        cleaned_path = CLEANED_PATH
         try:
+            if os.path.exists(cleaned_path) and os.listdir(cleaned_path):
+                print(f"Directory {cleaned_path} already exists and is not empty. Skipping creation.")
+                return
+
+            shutil.rmtree(cleaned_path, ignore_errors=True)
             os.mkdir(cleaned_path)
         except Exception as e:
             print(f"Error creating directory: {e}")
