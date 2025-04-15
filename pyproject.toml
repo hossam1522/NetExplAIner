@@ -29,6 +29,3 @@ egg_base = "/tmp"
 
 [tool.setuptools]
 py-modules = []
-
-[project.optional-dependencies]
-dev = ["ruff"]
