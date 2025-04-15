@@ -1,6 +1,6 @@
 models:
   - "mistral-7b"
-  - "gemini-2.0-flash"
+#  - "gemini-2.0-flash"
 
 questions:
   - question: "What is the total number of packets in the trace?"
@@ -23,9 +23,8 @@ questions:
 
   - question: "What is the total size of transmitted bytes?"
     subquestions:
-      - "Sum of all packet lengths from trace data"
-      - "Number of packets with truncated/missing length data"
-      - "Header size to exclude (if any)"
+      - "Get all packet lengths from trace data"
+      - "Sum all packet lengths"
 
   - question: "What is the average size of packets in bytes?"
     subquestions:
