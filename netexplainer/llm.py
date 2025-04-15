@@ -150,7 +150,6 @@ class LLM_GEMINI(LLM):
             temperature=0,
             max_tokens=None,
             timeout=None,
-            max_retries=2,
         )
 
         if not tools:
@@ -227,6 +226,33 @@ class LLM_MISTRAL_SABA_24B(LLM):
         llm = ChatGroq(
             model="mistral-saba-24b",
             temperature=0,
+        )
+
+        if not tools:
+            self.model = llm
+        else:
+            self.model = llm.bind_tools(
+                tools=[calculator],
+            )
+
+class LLM_GEMMA_3(LLM):
+    """
+    Class for Google Gemini LLM
+    """
+    def __init__(self, data_path: str, tools: bool = False):
+        """
+        Initialize the LLM object with the file provided
+        Args:
+            data_path (str): The path of the file to process
+        """
+        super().__init__(data_path)
+        os.environ["GOOGLE_API_KEY"] = os.getenv("GOOGLE_API_KEY")
+
+        llm = ChatGoogleGenerativeAI(
+            model="gemma-3-27b-it",
+            temperature=0,
+            max_tokens=None,
+            timeout=None,
         )
 
         if not tools:
