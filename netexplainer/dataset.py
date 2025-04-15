@@ -6,7 +6,7 @@ import yaml
 
 
 class Dataset:
-    def __init__(self, file_path: str, questions_path: str, max_packets: int):
+    def __init__(self, file_path: str, questions_path: str):
         """
         Initialize the dataset object with the file provided
 
@@ -41,7 +41,6 @@ class Dataset:
             subquestions = item['subquestions']
             self.questions_subquestions[question] = subquestions
 
-        self.max_packets = max_packets
         self.questions_answers = self.__answer_question(self.__path)
         self.processed_file = self.__process_file(self.__path)
     
@@ -103,24 +102,21 @@ class Dataset:
 
         table_rows = []
 
-        num = 0
-
         for line in cap_lines:
-            if num < self.max_packets:
-                columns = re.split(match_tabs, line.strip())
+            columns = re.split(match_tabs, line.strip())
 
-                if "\u2192" in columns:
-                    # Remove it from list
-                    columns.remove("\u2192")
+            if "\u2192" in columns:
+                # Remove it from list
+                columns.remove("\u2192")
 
-                # Format columns elements before append them to the table
-                for i, col in enumerate(columns):
-                    col = col.strip().replace("\u2192", "->").replace('"', "'")
-                    columns[i] = col
+            # Format columns elements before append them to the table
+            for i, col in enumerate(columns):
+                col = col.strip().replace("\u2192", "->").replace('"', "'")
+                columns[i] = col
 
-                table_rows.append(columns)
+            table_rows.append(columns)
 
-                num += 1
+            num += 1
 
         cap_formated = ""
 
@@ -139,7 +135,7 @@ class Dataset:
         Returns:
             dict: Dictionary with the questions and answers
         """
-        packets = rdpcap(file_path, count=self.max_packets)
+        packets = rdpcap(file_path)
         questions_answers = {}
 
         for question in self.questions_subquestions.keys():
