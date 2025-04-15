@@ -1128,6 +1128,22 @@ wheels = [
 ]
 
 [[package]]
+name = "langchain-mistralai"
+version = "0.2.8"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "httpx" },
+    { name = "httpx-sse" },
+    { name = "langchain-core" },
+    { name = "pydantic" },
+    { name = "tokenizers" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/44/de/9233ac417fc75362d37e8893e842672e53fbac5d90727145c88707572542/langchain_mistralai-0.2.8.tar.gz", hash = "sha256:fbeee35d559999fb28fd831683602706b6ba49a4ee5235d4e292dce01f40a700", size = 20490 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/a2/70/9b100cb15698afaf2e009b17d9531096d88dce4ea7fd3b2b072e6dd04699/langchain_mistralai-0.2.8-py3-none-any.whl", hash = "sha256:2d081b1a22d4588508c737492c62713ece14646d02168ebe06ca1060866a9318", size = 16315 },
+]
+
+[[package]]
 name = "langchain-text-splitters"
 version = "0.3.6"
 source = { registry = "https://pypi.org/simple" }
@@ -1372,6 +1388,7 @@ dependencies = [
     { name = "langchain-core" },
     { name = "langchain-google-genai" },
     { name = "langchain-groq" },
+    { name = "langchain-mistralai" },
     { name = "numexpr" },
     { name = "pytest" },
     { name = "scapy" },
@@ -1390,6 +1407,7 @@ requires-dist = [
     { name = "langchain-core" },
     { name = "langchain-google-genai" },
     { name = "langchain-groq" },
+    { name = "langchain-mistralai" },
     { name = "numexpr" },
     { name = "pytest" },
     { name = "ruff", marker = "extra == 'dev'" },

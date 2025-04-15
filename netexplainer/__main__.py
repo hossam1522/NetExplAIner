@@ -6,8 +6,10 @@ import time
 dataset = Dataset('netexplainer/downloads/data.pcap', 'netexplainer/questions/questions.yaml', 128)
 #llm = LLM_GEMINI(dataset.processed_file, tools=True)
 #llm = LLM_QWEN_2_5_32B(dataset.processed_file, tools=True)
-llm = LLM_LLAMA_3_8B(dataset.processed_file, tools=True)
+#llm = LLM_LLAMA_3_8B(dataset.processed_file, tools=True)
 #llm = LLM_MISTRAL_SABA_24B(dataset.processed_file, tools=True)
+#llm = LLM_GEMMA_3(dataset.processed_file, tools=True)
+llm = LLM_MISTRAL_7B(dataset.processed_file, tools=True)
 evaluator = Evaluator(dataset)
 
 results = []

@@ -6,6 +6,7 @@ from langchain_community.document_loaders import TextLoader
 from langchain_core.output_parsers import StrOutputParser
 from langchain.prompts import ChatPromptTemplate
 from langchain_google_genai import ChatGoogleGenerativeAI
+from langchain_mistralai.chat_models import ChatMistralAI
 from langchain_groq import ChatGroq
 from langchain_core.tools import tool
 
@@ -150,7 +151,6 @@ class LLM_GEMINI(LLM):
             temperature=0,
             max_tokens=None,
             timeout=None,
-            max_retries=2,
         )
 
         if not tools:
@@ -162,7 +162,7 @@ class LLM_GEMINI(LLM):
 
 class LLM_QWEN_2_5_32B(LLM):
     """
-    Class for Google Gemini LLM
+    Class for Qwen 2.5 32B LLM
     """
     def __init__(self, data_path: str, tools: bool = False):
         """
@@ -226,6 +226,59 @@ class LLM_MISTRAL_SABA_24B(LLM):
 
         llm = ChatGroq(
             model="mistral-saba-24b",
+            temperature=0,
+        )
+
+        if not tools:
+            self.model = llm
+        else:
+            self.model = llm.bind_tools(
+                tools=[calculator],
+            )
+
+class LLM_GEMMA_3(LLM):
+    """
+    Class for Google Gemma 3 LLM
+    """
+    def __init__(self, data_path: str, tools: bool = False):
+        """
+        Initialize the LLM object with the file provided
+        Args:
+            data_path (str): The path of the file to process
+        """
+        super().__init__(data_path)
+        os.environ["GOOGLE_API_KEY"] = os.getenv("GOOGLE_API_KEY")
+
+        llm = ChatGoogleGenerativeAI(
+            model="gemma-3-27b-it",
+            temperature=0,
+            max_tokens=None,
+            timeout=None,
+        )
+
+        if not tools:
+            self.model = llm
+        else:
+            self.model = llm.bind_tools(
+                tools=[calculator],
+            )
+
+class LLM_MISTRAL_7B(LLM):
+    """
+    Class for Mistral 7B LLM
+    """
+    def __init__(self, data_path: str, tools: bool = False):
+        """
+        Initialize the LLM object with the file provided
+        Args:
+            data_path (str): The path of the file to process
+        """
+        super().__init__(data_path)
+        os.environ["MISTRAL_API_KEY"] = os.getenv("MISTRAL_API_KEY")
+
+        llm = ChatMistralAI(
+            api_key=os.getenv("MISTRAL_API_KEY"),
+            model="open-mistral-7b",
             temperature=0,
         )
 
