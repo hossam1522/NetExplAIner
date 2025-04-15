@@ -3,9 +3,14 @@ from netexplainer.llm import models
 from netexplainer.evaluator import Evaluator
 from netexplainer.scraper import Scraper
 import argparse
+import yaml
 import time
 
 QUESTIONS_PATH = "netexplainer/data/questions.yaml"
+with open(QUESTIONS_PATH, 'r') as file:
+    data = yaml.safe_load(file)
+    models = data['models']
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
