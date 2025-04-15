@@ -52,7 +52,6 @@ class TestLLMSubclasses(unittest.TestCase):
                 temperature=0,
                 max_tokens=None,
                 timeout=None,
-                max_retries=2,
             )
             mock_model.return_value.bind_tools.assert_called_once_with(tools=[calculator])
 
