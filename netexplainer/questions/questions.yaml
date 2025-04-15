@@ -1,3 +1,7 @@
+models:
+  - "mistral-7b"
+  - "gemini-2.0-flash"
+
 questions:
   - question: "What is the total number of packets in the trace?"
     subquestions:

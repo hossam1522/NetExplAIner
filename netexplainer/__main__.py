@@ -1,5 +1,5 @@
 from netexplainer.dataset import Dataset
-from netexplainer.llm import *
+from netexplainer.llm import models
 from netexplainer.evaluator import Evaluator
 from netexplainer.scraper import Scraper
 import argparse
