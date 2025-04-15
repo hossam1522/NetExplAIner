@@ -18,7 +18,7 @@ class TestDataset(unittest.TestCase):
             subquestions: ["Sub1", "Sub2"]
         """
         with patch("builtins.open", mock_open(read_data=self.mock_questions_content)):
-            self.dataset = Dataset("dummy.pcap", "dummy_questions.yaml", max_packets=100)
+            self.dataset = Dataset("dummy.pcap", "dummy_questions.yaml")
 
     @patch("netexplainer.dataset.check_output", return_value=b"Mocked Data")
     @patch("os.path.exists", return_value=True)
@@ -27,9 +27,8 @@ class TestDataset(unittest.TestCase):
     def test_init(self, mock_rdpcap, mock_isfile, mock_exists, mock_check_output):
         mock_rdpcap.return_value = MagicMock()
         with patch("builtins.open", mock_open(read_data=self.mock_questions_content)):
-            dataset = Dataset("dummy.pcap", "dummy_questions.yaml", max_packets=100)
+            dataset = Dataset("dummy.pcap", "dummy_questions.yaml")
             self.assertEqual(dataset._Dataset__path, os.path.abspath("dummy.pcap"))
-            self.assertEqual(dataset.max_packets, 100)
 
     @patch("netexplainer.dataset.check_output", return_value=b"Mocked Data")
     @patch("builtins.open", new_callable=mock_open)
@@ -54,7 +53,7 @@ class TestDataset(unittest.TestCase):
         mock_isfile.side_effect = lambda x: True if x == "dummy.pcap" else False
         mock_rdpcap.return_value = MagicMock()
         with self.assertRaises(FileNotFoundError):
-            Dataset("dummy.pcap", "missing.yaml", max_packets=100)
+            Dataset("dummy.pcap", "missing.yaml")
 
 if __name__ == '__main__':
     unittest.main()

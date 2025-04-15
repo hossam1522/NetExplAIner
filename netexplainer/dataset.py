@@ -116,8 +116,6 @@ class Dataset:
 
             table_rows.append(columns)
 
-            num += 1
-
         cap_formated = ""
 
         for row in table_rows:
