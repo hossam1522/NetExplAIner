@@ -1,4 +1,4 @@
-.PHONY: help check install test install-uv run dev clean download-data clean-data
+.PHONY: help check install test install-uv run dev clean download-data clean-data delete-data
 
 help:
 	@echo "Usage: make [target]"
@@ -10,6 +10,7 @@ help:
 	@echo "  test          	Run the tests"
 	@echo "  download-data  	Download network files from Wireshark samples"
 	@echo "  clean-data N=<number>	Keep network files with a maximum of <number> packets"
+	@echo "  delete-data   	Delete all network files"
 	@echo "  run           	Run the program"
 	@echo "  dev           	Create a development environment"
 	@echo "  clean         	Remove build artifacts"
@@ -40,6 +41,9 @@ ifndef N
 else
 	uv run python3 -m netexplainer --clean-data $(N)
 endif
+
+delete-data:
+	rm -rf netexplainer/data/raw/* netexplainer/data/cleaned/*
 
 dev:
 	uv venv dev
