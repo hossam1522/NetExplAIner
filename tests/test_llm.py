@@ -1,7 +1,7 @@
 import unittest
 import os
 from unittest.mock import patch, mock_open, MagicMock
-from netexplainer.llm import LLM, LLM_GEMINI, LLM_LLAMA_3_8B, calculator
+from netexplainer.llm import LLM, models, calculator
 
 class TestLLM(unittest.TestCase):
     @patch("netexplainer.llm.TextLoader")
@@ -46,7 +46,7 @@ class TestLLMSubclasses(unittest.TestCase):
     def test_gemini_init(self, mock_load_dotenv, mock_isfile, mock_exists, mock_model):
         with patch("netexplainer.llm.TextLoader"), \
              patch("builtins.open", mock_open(read_data="data")):
-            llm = LLM_GEMINI("dummy.txt", tools=True)
+            llm = models["gemini-2.0-flash"]("dummy.txt", tools=True)
             mock_model.assert_called_once_with(
                 model="gemini-2.0-flash",
                 temperature=0,
@@ -63,7 +63,7 @@ class TestLLMSubclasses(unittest.TestCase):
     def test_llama_init(self, mock_load_dotenv, mock_isfile, mock_exists, mock_model):
         with patch("netexplainer.llm.TextLoader"), \
              patch("builtins.open", mock_open(read_data="data")):
-            llm = LLM_LLAMA_3_8B("dummy.txt", tools=True)
+            llm = models["llama3-8b-8192"]("dummy.txt", tools=True)
             mock_model.assert_called_once_with(
                 model="llama3-8b-8192",
                 temperature=0,
