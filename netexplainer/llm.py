@@ -279,7 +279,7 @@ class LLM_MISTRAL_7B(LLM):
             api_key=os.getenv("MISTRAL_API_KEY"),
             model="open-mistral-7b",
             temperature=0,
-            timeout=600,
+            timeout=30,
         )
 
         if not tools:

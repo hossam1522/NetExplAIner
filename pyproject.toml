@@ -20,7 +20,8 @@ dependencies = [
     "langchain-groq",
     "numexpr",
     "langchain-mistralai",
-    "plotly"
+    "plotly",
+    "kaleido"
 ]
 requires-python = ">=3.10"
 readme = "README.md"
@@ -30,3 +31,6 @@ egg_base = "/tmp"
 
 [tool.setuptools]
 py-modules = []
+
+[tool.uv]
+constraint-dependencies = ["kaleido!=0.2.1.post1"]

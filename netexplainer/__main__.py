@@ -3,13 +3,81 @@ import yaml
 import os
 import sys
 import time
+import re
 import plotly.express as px
+import plotly.graph_objects as go
 from netexplainer.dataset import Dataset
 from netexplainer.llm import models
 from netexplainer.evaluator import Evaluator
 from netexplainer.scraper import Scraper
 
 QUESTIONS_PATH = "netexplainer/data/questions.yaml"
+
+def generate_model_subquestions_chart(results: list) -> None:
+    """
+    Generate radar charts for the subquestions similarity evaluation.
+
+    Args:
+        results (list): List of evaluation results.
+    """
+    from collections import defaultdict
+
+    model_data = defaultdict(lambda: defaultdict(list))
+
+    for result in results:
+        model = result["model"]
+        question = result["question"]
+        sub_eval = result["subquestions_eval"]
+
+        if not question or sub_eval == "ERROR":
+            continue
+
+        try:
+            similarity = float(sub_eval)
+            model_data[model][question].append(similarity)
+        except:
+            continue
+
+    for model, questions in model_data.items():
+        sorted_questions = sorted(
+            questions.keys(),
+            key=lambda x: int(re.search(r'\d+', x).group()) if re.search(r'\d+', x) else 0
+        )
+
+        avg_values = []
+        valid_questions = []
+
+        for q in sorted_questions:
+            avg = sum(questions[q]) / len(questions[q])
+            avg_values.append(round(avg, 1))
+            valid_questions.append("Question " + str(len(valid_questions) + 1))
+
+        fig = go.Figure(data=go.Scatterpolar(
+            r=avg_values,
+            theta=valid_questions,
+            fill='toself',
+            line=dict(color='royalblue'),
+            name="Similarity"
+        ))
+
+        fig.update_layout(
+            polar=dict(
+                radialaxis=dict(
+                    visible=True,
+                    range=[0, 100],
+                    tickfont=dict(size=10)
+                ),
+                angularaxis=dict(tickfont=dict(size=12))
+            ),
+            title=f"{model}",
+            showlegend=True,
+            width=800,
+            height=600
+        )
+
+        dir_path = f"netexplainer/data/evaluation/{model}/"
+        os.makedirs(dir_path, exist_ok=True)
+        fig.write_image(f"{dir_path}radar_subquestions_similarity.png")
 
 def generate_pie_charts(results: list) -> None:
     """
@@ -52,7 +120,9 @@ def generate_pie_charts(results: list) -> None:
             title=f"{model}",
             color_discrete_sequence=px.colors.qualitative.Pastel
         )
-        fig.write_image(f"netexplainer/data/pie_charts/{model}/answers_pie_chart.png")
+        dir_path = f"netexplainer/data/evaluation/{model}/"
+        os.makedirs(dir_path, exist_ok=True)
+        fig.write_image(f"{dir_path}answers_pie_chart.png")
 
 def evaluate_without_tools() -> list:
     """
@@ -71,27 +141,36 @@ def evaluate_without_tools() -> list:
                 evaluator = Evaluator(dataset)
 
                 for question in dataset.questions_subquestions.keys():
-                    time.sleep(2)
-                    subquestions = llm.get_subquestions(question)
+                    for _ in range(5):
+                        try:
+                            subquestions = llm.get_subquestions(question)
 
-                    answers = []
-                    for subquestion in subquestions:
-                        time.sleep(2)
-                        answer = llm.answer_subquestion(subquestion)
-                        answers.append(answer)
+                            answers = []
+                            for subquestion in subquestions:
+                                time.sleep(1.5)
+                                answer = llm.answer_subquestion(subquestion)
+                                answers.append(answer)
 
-                    time.sleep(2)
-                    final_answer = llm.get_final_answer(question, subquestions, answers)
+                            time.sleep(1.5)
+                            final_answer = llm.get_final_answer(question, subquestions, answers)
 
-                    try:
-                        subquestions_eval = evaluator.evaluate_subquestions(question, subquestions)
-                    except Exception as e:
-                        subquestions_eval = "ERROR"
+                            try:
+                                time.sleep(1.5)
+                                subquestions_eval = evaluator.evaluate_subquestions(question, subquestions)
+                            except Exception as e:
+                                subquestions_eval = "ERROR"
 
-                    try:
-                        answers_eval = evaluator.evaluate_answer(question, final_answer)
-                    except Exception as e:
-                        answers_eval = "PROBLEM"
+                            try:
+                                time.sleep(1.5)
+                                answers_eval = evaluator.evaluate_answer(question, final_answer)
+                            except Exception as e:
+                                answers_eval = "PROBLEM"
+
+                            if subquestions_eval != "ERROR" and answers_eval != "PROBLEM":
+                                break
+
+                        except Exception as e:
+                            print(f"Error processing question {question} in file {file}: {e}")
 
                     all_results.append({
                         "model": model,
@@ -105,14 +184,6 @@ def evaluate_without_tools() -> list:
 
             except Exception as e:
                 print(f"Error processing file {file}: {e}")
-                all_results.append({
-                    "model": model,
-                    "file": file,
-                    "question": None,
-                    "subquestions_eval": "ERROR",
-                    "answer_eval": "ERROR"
-                })
-                continue
 
     return all_results
 
@@ -142,3 +213,4 @@ if __name__ == "__main__":
 
     results = evaluate_without_tools()
     generate_pie_charts(results)
+    generate_model_subquestions_chart(results)
