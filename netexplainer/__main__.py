@@ -1,8 +1,8 @@
 import argparse
 import yaml
 import sys
-from netexplainer.scraper import Scraper, QUESTIONS_PATH
-from netexplainer.evaluator import Evaluator
+from netexplainer.scraper import Scraper
+from netexplainer.evaluator import Evaluator, QUESTIONS_PATH
 
 
 if __name__ == "__main__":
