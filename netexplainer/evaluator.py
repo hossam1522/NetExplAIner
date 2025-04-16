@@ -5,7 +5,6 @@ import plotly.express as px
 import plotly.graph_objects as go
 from netexplainer.dataset import Dataset
 from netexplainer.llm import models
-from netexplainer.evaluator import Evaluator
 from netexplainer.dataset import Dataset
 from langchain_core.output_parsers import StrOutputParser
 from langchain.prompts import ChatPromptTemplate
