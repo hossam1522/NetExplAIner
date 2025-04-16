@@ -176,9 +176,15 @@ def generate_pie_charts(results: list) -> None:
         os.makedirs(dir_path, exist_ok=True)
         fig.write_image(f"{dir_path}answers_pie_chart.png")
 
-def evaluate_without_tools() -> list:
+def evaluate(tools: bool = False) -> list:
     """
     Evaluates the models without using any tools.
+
+    Args:
+        tools (bool): Whether to use tools or not.
+
+    Returns:
+        list: List of evaluation results.
     """
     all_results = []
 
@@ -189,7 +195,7 @@ def evaluate_without_tools() -> list:
 
             try:
                 dataset = Dataset(os.path.join("netexplainer/data/cleaned/", file), QUESTIONS_PATH)
-                llm = models[f"{model}"](dataset.processed_file)
+                llm = models[f"{model}"](dataset.processed_file, tools=tools)
                 evaluator = Evaluator(dataset)
 
                 for question in dataset.questions_subquestions.keys():
@@ -263,7 +269,7 @@ if __name__ == "__main__":
         data = yaml.safe_load(file)
         models_to_evaluate = data['models']
 
-    results = evaluate_without_tools()
+    results = evaluate(tools=False)
     generate_pie_charts(results)
     generate_bar_charts(results)
     generate_model_subquestions_chart(results)
