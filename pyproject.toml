@@ -20,7 +20,7 @@ dependencies = [
     "langchain-groq",
     "numexpr",
     "langchain-mistralai",
-    "pandas"
+    "plotly"
 ]
 requires-python = ">=3.10"
 readme = "README.md"
