@@ -242,8 +242,7 @@ class Evaluator:
             for q in sorted_questions:
                 yes_values.append(questions[q]['YES'])
                 no_values.append(questions[q]['NO'])
-                match = re.search(r'\d+', q)
-                q_labels.append("Question " + str(len(q_labels) + 1) if match else q)
+                q_labels.append("Question " + str(len(q_labels) + 1))
 
             fig = go.Figure(data=[
                 go.Bar(name='Correct (YES)', x=q_labels, y=yes_values, marker_color='#4CAF50'),
