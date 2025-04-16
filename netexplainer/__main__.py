@@ -79,6 +79,58 @@ def generate_model_subquestions_chart(results: list) -> None:
         os.makedirs(dir_path, exist_ok=True)
         fig.write_image(f"{dir_path}radar_subquestions_similarity.png")
 
+def generate_bar_charts(results: list) -> None:
+    """
+    Generate grouped bar charts for correct/incorrect answers per question for each model.
+    """
+    from collections import defaultdict
+
+    model_question_data = defaultdict(lambda: defaultdict(lambda: {'YES': 0, 'NO': 0}))
+
+    for result in results:
+        model = result["model"]
+        question = result["question"]
+        eval = result["answer_eval"]
+
+        if eval in ['YES', 'NO']:
+            model_question_data[model][question][eval] += 1
+
+    for model, questions in model_question_data.items():
+        sorted_questions = sorted(
+            questions.keys(),
+            key=lambda x: int(re.search(r'\d+', x).group()) if re.search(r'\d+', x) else 0
+        )
+
+        yes_values = []
+        no_values = []
+        q_labels = []
+
+        for q in sorted_questions:
+            yes_values.append(questions[q]['YES'])
+            no_values.append(questions[q]['NO'])
+            match = re.search(r'\d+', q)
+            q_labels.append("Question " + str(len(q_labels) + 1) if match else q)
+
+        fig = go.Figure(data=[
+            go.Bar(name='Correct (YES)', x=q_labels, y=yes_values, marker_color='#4CAF50'),
+            go.Bar(name='Incorrect (NO)', x=q_labels, y=no_values, marker_color='#F44336')
+        ])
+
+        fig.update_layout(
+            barmode='group',
+            title=f"{model}",
+            xaxis_title="Questions",
+            yaxis_title="Count",
+            legend=dict(orientation="h", yanchor="bottom", y=1.02),
+            width=1200,
+            height=600,
+            margin=dict(t=60)
+        )
+
+        dir_path = f"netexplainer/data/evaluation/{model}/"
+        os.makedirs(dir_path, exist_ok=True)
+        fig.write_image(f"{dir_path}grouped_bar_answers.png")
+
 def generate_pie_charts(results: list) -> None:
     """
     Generate pie charts from the evaluation results.
@@ -213,4 +265,5 @@ if __name__ == "__main__":
 
     results = evaluate_without_tools()
     generate_pie_charts(results)
+    generate_bar_charts(results)
     generate_model_subquestions_chart(results)
