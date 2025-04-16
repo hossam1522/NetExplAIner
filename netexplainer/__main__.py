@@ -28,5 +28,7 @@ if __name__ == "__main__":
         data = yaml.safe_load(file)
         models_to_evaluate = data['models']
 
-    Evaluator.evaluate(models_to_evaluate=models_to_evaluate, tools=False)
-    Evaluator.evaluate(models_to_evaluate=models_to_evaluate, tools=True)
+    evaluator = Evaluator()
+
+    evaluator.evaluate(models_to_evaluate=models_to_evaluate, tools=False)
+    evaluator.evaluate(models_to_evaluate=models_to_evaluate, tools=True)
