@@ -57,7 +57,7 @@ class LLM:
         Returns:
             list: A list of sub-questions
         """
-        template = """You are a network analyst that generates multiple sub-questions related to an input question about a network trace.
+        template = """You are a network analyst that generates multiple sub-questions related to an input question about a network trace provided in text format.
         I do not need the answer to the question. The ouput should only contain the sub-questions. Be as simple as possible. 
         3 sub-questions as maximum. The sub-questions cannot answer directly the input question.
         Input question: {question}"""
