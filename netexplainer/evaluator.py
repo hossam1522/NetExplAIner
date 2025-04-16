@@ -131,16 +131,19 @@ class Evaluator:
                             "answer_eval": answers_eval
                         })
 
-                        print(f"Model: {model}, File: {file}, Question: {question}, Subquestions Eval: {subquestions_eval}, Answer Eval: {answers_eval}")
+                        if tools:
+                            print(f"Model: {model}_tools, File: {file}, Question: {question}, Subquestions Eval: {subquestions_eval}, Answer Eval: {answers_eval}")
+                        else:
+                            print(f"Model: {model}, File: {file}, Question: {question}, Subquestions Eval: {subquestions_eval}, Answer Eval: {answers_eval}")
 
                 except Exception as e:
                     print(f"Error processing file {file}: {e}")
 
-        self.generate_pie_charts(all_results)
-        self.generate_bar_charts(all_results)
-        self.generate_model_subquestions_chart(all_results)
+        self.generate_pie_charts(all_results, tools)
+        self.generate_bar_charts(all_results, tools)
+        self.generate_model_subquestions_chart(all_results, tools)
 
-    def generate_model_subquestions_chart(self, results: list) -> None:
+    def generate_model_subquestions_chart(self, results: list, tools: bool = False) -> None:
         """
         Generate radar charts for the subquestions similarity evaluation.
 
@@ -202,11 +205,15 @@ class Evaluator:
                 height=600
             )
 
-            dir_path = f"netexplainer/data/evaluation/{model}/"
+            dir_path = ""
+            if tools:
+                dir_path = f"netexplainer/data/evaluation/{model}_tools/"
+            else:
+                dir_path = f"netexplainer/data/evaluation/{model}/"
             os.makedirs(dir_path, exist_ok=True)
             fig.write_image(f"{dir_path}radar_subquestions_similarity.png")
 
-    def generate_bar_charts(self, results: list) -> None:
+    def generate_bar_charts(self, results: list, tools: bool = False) -> None:
         """
         Generate grouped bar charts for correct/incorrect answers per question for each model.
         """
@@ -254,11 +261,15 @@ class Evaluator:
                 margin=dict(t=60)
             )
 
-            dir_path = f"netexplainer/data/evaluation/{model}/"
+            dir_path = ""
+            if tools:
+                dir_path = f"netexplainer/data/evaluation/{model}_tools/"
+            else:
+                dir_path = f"netexplainer/data/evaluation/{model}/"
             os.makedirs(dir_path, exist_ok=True)
             fig.write_image(f"{dir_path}grouped_bar_answers.png")
 
-    def generate_pie_charts(self, results: list) -> None:
+    def generate_pie_charts(self, results: list, tools: bool = False) -> None:
         """
         Generate pie charts from the evaluation results.
 
@@ -299,6 +310,11 @@ class Evaluator:
                 title=f"{model}",
                 color_discrete_sequence=px.colors.qualitative.Pastel
             )
-            dir_path = f"netexplainer/data/evaluation/{model}/"
+
+            dir_path = ""
+            if tools:
+                dir_path = f"netexplainer/data/evaluation/{model}_tools/"
+            else:
+                dir_path = f"netexplainer/data/evaluation/{model}/"
             os.makedirs(dir_path, exist_ok=True)
             fig.write_image(f"{dir_path}answers_pie_chart.png")
