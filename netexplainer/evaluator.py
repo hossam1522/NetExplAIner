@@ -6,7 +6,6 @@ import plotly.graph_objects as go
 from netexplainer.dataset import Dataset
 from netexplainer.llm import models
 from netexplainer.evaluator import Evaluator
-from netexplainer.llm import LLM_GEMINI
 from netexplainer.dataset import Dataset
 from langchain_core.output_parsers import StrOutputParser
 from langchain.prompts import ChatPromptTemplate
@@ -27,7 +26,7 @@ class Evaluator:
             questions_path (str): The path of the questions file
         """
         self.dataset = dataset
-        self.llm = LLM_GEMINI(dataset.processed_file)
+        self.llm = models["gemini-2.0-flash"](dataset.processed_file)
 
     def evaluate_subquestions(self, question: str, subquestions: list) -> str:
         """
