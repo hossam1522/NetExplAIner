@@ -2,6 +2,7 @@ import argparse
 import yaml
 import sys
 from netexplainer.scraper import Scraper, QUESTIONS_PATH
+from netexplainer.evaluator import Evaluator
 
 
 if __name__ == "__main__":
@@ -13,13 +14,13 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    scraper = Scraper()
-
     if args.download_data:
+        scraper = Scraper()
         scraper.download_captures()
         sys.exit(0)
     elif args.clean_data:
         max_packets = args.clean_data
+        scraper = Scraper()
         scraper.clean_raw_data(max_packets=max_packets)
         sys.exit(0)
 
@@ -27,5 +28,5 @@ if __name__ == "__main__":
         data = yaml.safe_load(file)
         models_to_evaluate = data['models']
 
-    scraper.evaluate(models_to_evaluate, tools=False)
-    scraper.evaluate(models_to_evaluate, tools=True)
+    Evaluator.evaluate(models_to_evaluate, tools=False)
+    Evaluator.evaluate(models_to_evaluate, tools=True)
