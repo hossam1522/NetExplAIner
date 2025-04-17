@@ -180,7 +180,7 @@ class Dataset:
                         protocol_count['UDP'] += 1
                 predominant_protocol = max(protocol_count, key=protocol_count.get)
                 if protocol_count[predominant_protocol] == 0:
-                    predominant_protocol = "None"
+                    predominant_protocol = "In the capture is not used any of those protocols."
                 questions_answers[question] = predominant_protocol
 
             elif question == "How long in seconds does the communication last?":
