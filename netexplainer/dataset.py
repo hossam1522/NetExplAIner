@@ -179,6 +179,8 @@ class Dataset:
                     elif UDP in packet:
                         protocol_count['UDP'] += 1
                 predominant_protocol = max(protocol_count, key=protocol_count.get)
+                if protocol_count[predominant_protocol] == 0:
+                    predominant_protocol = "None"
                 questions_answers[question] = predominant_protocol
 
             elif question == "How long in seconds does the communication last?":
