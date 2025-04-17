@@ -98,11 +98,11 @@ class Evaluator:
 
                                 answers = []
                                 for subquestion in subquestions:
-                                    time.sleep(1.5)
+                                    time.sleep(2)
                                     answer = llm.answer_subquestion(subquestion)
                                     answers.append(answer)
 
-                                time.sleep(1.5)
+                                time.sleep(2)
                                 final_answer = llm.get_final_answer(question, subquestions, answers)
 
                                 try:
