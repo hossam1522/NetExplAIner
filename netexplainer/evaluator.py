@@ -190,6 +190,11 @@ class Evaluator:
                 name="Similarity"
             ))
 
+            if tools:
+                title = f"Subquestions similarity: {model} with tools"
+            else:
+                title = f"Subquestions similarity: {model}"
+
             fig.update_layout(
                 polar=dict(
                     radialaxis=dict(
@@ -199,7 +204,7 @@ class Evaluator:
                     ),
                     angularaxis=dict(tickfont=dict(size=12))
                 ),
-                title=f"{model}",
+                title=title,
                 showlegend=True,
                 width=800,
                 height=600
@@ -249,9 +254,14 @@ class Evaluator:
                 go.Bar(name='Incorrect (NO)', x=q_labels, y=no_values, marker_color='#F44336')
             ])
 
+            if tools:
+                title = f"Correct and incorrect answers by question: {model} with tools"
+            else:
+                title = f"Correct and incorrect answers by question: {model}"
+
             fig.update_layout(
                 barmode='group',
-                title=f"{model}",
+                title=title,
                 xaxis_title="Questions",
                 yaxis_title="Count",
                 legend=dict(orientation="h", yanchor="bottom", y=1.02),
@@ -303,10 +313,15 @@ class Evaluator:
             labels = list(counts.keys())
             values = [round((count/total)*100, 2) for count in counts.values()]
 
+            if tools:
+                title = f"Correct and incorrect answers: {model} with tools"
+            else:
+                title = f"Correct and incorrect answers: {model}"
+
             fig = px.pie(
                 names=labels,
                 values=values,
-                title=f"{model}",
+                title=title,
                 color_discrete_sequence=px.colors.qualitative.Pastel
             )
 
