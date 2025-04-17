@@ -1,4 +1,4 @@
-from scapy.all import rdpcap, IP, ICMP, TCP, UDP
+from scapy.all import rdpcap
 import os
 from subprocess import check_output
 import re
