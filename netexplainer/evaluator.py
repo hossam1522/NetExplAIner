@@ -92,27 +92,27 @@ class Evaluator:
                     llm = models[f"{model}"](dataset.processed_file, tools=tools)
 
                     for question in dataset.questions_subquestions.keys():
-                        for _ in range(5):
+                        for _ in range(10):
                             try:
                                 subquestions = llm.get_subquestions(question)
 
                                 answers = []
                                 for subquestion in subquestions:
-                                    time.sleep(2)
+                                    time.sleep(2.5)
                                     answer = llm.answer_subquestion(subquestion)
                                     answers.append(answer)
 
-                                time.sleep(2)
+                                time.sleep(2.5)
                                 final_answer = llm.get_final_answer(question, subquestions, answers)
 
                                 try:
-                                    time.sleep(1.5)
+                                    time.sleep(2)
                                     subquestions_eval = self.evaluate_subquestions(question, subquestions, dataset)
                                 except Exception as e:
                                     subquestions_eval = "ERROR"
 
                                 try:
-                                    time.sleep(1.5)
+                                    time.sleep(2)
                                     answers_eval = self.evaluate_answer(question, final_answer, dataset)
                                 except Exception as e:
                                     answers_eval = "PROBLEM"
