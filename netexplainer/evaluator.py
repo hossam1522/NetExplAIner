@@ -157,7 +157,7 @@ class Evaluator:
         for result in results:
             model = result["model"]
             question = result["question"]
-            sub_eval = result["subquestions_eval"]
+            sub_eval = result["subquestions_eval"].replace('%', '') if isinstance(result["subquestions_eval"], str) else result["subquestions_eval"]
 
             if not question or sub_eval == "ERROR":
                 continue
@@ -179,7 +179,7 @@ class Evaluator:
 
             for q in sorted_questions:
                 avg = sum(questions[q]) / len(questions[q])
-                avg_values.append(round(avg, 1))
+                avg_values.append(round(avg, 2))
                 valid_questions.append("Question " + str(len(valid_questions) + 1))
 
             fig = go.Figure(data=go.Scatterpolar(
@@ -301,7 +301,7 @@ class Evaluator:
                 continue
 
             labels = list(counts.keys())
-            values = [round((count/total)*100, 1) for count in counts.values()]
+            values = [round((count/total)*100, 2) for count in counts.values()]
 
             fig = px.pie(
                 names=labels,
