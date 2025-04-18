@@ -210,6 +210,11 @@ class Evaluator:
                 height=600
             )
 
+            print(f"\n\n")
+            for question in sorted_questions:
+                print(f"Model: {model}, Question: {question}, Similarity: {avg_values[sorted_questions.index(question)]}")
+            print(f"\n\n")
+
             dir_path = ""
             if tools:
                 dir_path = f"netexplainer/data/evaluation/{model}_tools/"
@@ -270,6 +275,11 @@ class Evaluator:
                 margin=dict(t=60)
             )
 
+            print(f"\n\n")
+            for question in sorted_questions:
+                print(f"Model: {model}, Question: {question}, Correct: {questions[question]['YES']}, Incorrect: {questions[question]['NO']}")
+            print(f"\n\n")
+
             dir_path = ""
             if tools:
                 dir_path = f"netexplainer/data/evaluation/{model}_tools/"
@@ -324,6 +334,11 @@ class Evaluator:
                 title=title,
                 color_discrete_sequence=px.colors.qualitative.Pastel
             )
+
+            print(f"\n\n")
+            for label, value in zip(labels, values):
+                print(f"Model: {model}, {label}: {value}%")
+            print(f"\n\n")
 
             dir_path = ""
             if tools:
