@@ -1,4 +1,5 @@
 import os
+import subprocess
 import re
 import requests
 import shutil
@@ -54,8 +55,35 @@ class Scraper:
                 print(f"Downloading {filename}")
                 with open(filepath, "wb") as f:
                     f.write(response.content)
+
+                if filename.endswith('.cap'):
+                    self.__convert_cap_to_pcap(filepath)
+
             except Exception as e:
                 print(f"Error downloading {url}: {str(e)}")
+
+    def __convert_cap_to_pcap(self, file_path: str) -> None:
+        """
+        Convert a .cap file to .pcap format using editcap.
+
+        Args:
+            file_path (str): The path to the .cap file.
+        """
+        try:
+            pcap_file_path = file_path.replace('.cap', '.pcap')
+
+            subprocess.run(
+                ["editcap", "-F", "libpcap", file_path, pcap_file_path],
+                check=True,
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL
+            )
+
+            os.remove(file_path)
+            print(f"Converted {file_path} to {pcap_file_path}")
+
+        except subprocess.CalledProcessError as e:
+            print(f"Error converting {file_path} to pcap: {str(e)}")
 
     def clean_raw_data(self, max_packets: int, data_path: str = DATASET_PATH) -> None:
         """
@@ -73,6 +101,7 @@ class Scraper:
 
             shutil.rmtree(cleaned_path, ignore_errors=True)
             os.mkdir(cleaned_path)
+
         except Exception as e:
             print(f"Error creating directory: {e}")
             return
