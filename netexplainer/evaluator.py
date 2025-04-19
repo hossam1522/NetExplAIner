@@ -295,18 +295,18 @@ class Evaluator:
         Args:
             results (list): List of evaluation results.
         """
-        from collections import defaultdict
+        from collections import defaultdict, OrderedDict
 
         model_data = defaultdict(list)
         for result in results:
             model_data[result["model"]].append(result["answer_eval"])
 
         for model, evaluations in model_data.items():
-            counts = {
-                "Correct (YES)": 0,
-                "Incorrect (NO)": 0,
-                "Problematic (PROBLEM)": 0
-            }
+            counts = OrderedDict([
+                ("Correct (YES)", 0),
+                ("Incorrect (NO)", 0),
+                ("Problematic (PROBLEM)", 0)
+            ])
 
             for eval in evaluations:
                 if eval == "YES":
