@@ -20,6 +20,7 @@ dependencies = [
     "langchain-groq",
     "numexpr",
     "langchain-mistralai",
+    "pandas",
     "plotly",
     "kaleido"
 ]
