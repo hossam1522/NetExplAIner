@@ -9,7 +9,7 @@ jobs:
       - run:
           name: Run unit tests
           command: |
-            export PYTHONPATH=$(pwd) && make test
+            make test
 
 workflows:
   main:

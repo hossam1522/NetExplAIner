@@ -10,10 +10,10 @@ from langchain_mistralai.chat_models import ChatMistralAI
 from langchain_groq import ChatGroq
 from langchain_core.tools import tool
 
-
 @tool
 def calculator(expression: str) -> str:
     """Calculate expression using Python's numexpr library.
+    USE ONLY IF NECESSARY.
 
     Expression should be a single line mathematical expression
     that solves the problem.
@@ -58,7 +58,7 @@ class LLM:
         Returns:
             list: A list of sub-questions
         """
-        template = """You are a network analyst that generates multiple sub-questions related to an input question about a network trace.
+        template = """You are a network analyst that generates multiple sub-questions related to an input question about a network trace provided in text format.
         I do not need the answer to the question. The ouput should only contain the sub-questions. Be as simple as possible. 
         3 sub-questions as maximum. The sub-questions cannot answer directly the input question.
         Input question: {question}"""
@@ -280,6 +280,7 @@ class LLM_MISTRAL_7B(LLM):
             api_key=os.getenv("MISTRAL_API_KEY"),
             model="open-mistral-7b",
             temperature=0,
+            timeout=30,
         )
 
         if not tools:
@@ -288,3 +289,12 @@ class LLM_MISTRAL_7B(LLM):
             self.model = llm.bind_tools(
                 tools=[calculator],
             )
+
+models = {
+    "gemini-2.0-flash": LLM_GEMINI,
+    "qwen-2.5-32b": LLM_QWEN_2_5_32B,
+    "llama3-8b-8192": LLM_LLAMA_3_8B,
+    "mistral-saba-24b": LLM_MISTRAL_SABA_24B,
+    "gemma-3-27b": LLM_GEMMA_3,
+    "mistral-7b": LLM_MISTRAL_7B,
+}

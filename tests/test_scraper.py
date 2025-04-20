@@ -1,7 +1,7 @@
 import os
 from unittest.mock import patch, MagicMock, Mock
 from scapy.error import Scapy_Exception
-from netexplainer.scraper import Scraper, DATASET_PATH, CLEANED_PATH
+from netexplainer.scraper import Scraper
 
 def test_get_download_urls():
     """Test URL parsing logic"""

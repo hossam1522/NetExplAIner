@@ -1,4 +1,4 @@
-from scapy.all import rdpcap, IP, ICMP, TCP, UDP
+from scapy.all import rdpcap
 import os
 from subprocess import check_output
 import re
@@ -6,7 +6,7 @@ import yaml
 
 
 class Dataset:
-    def __init__(self, file_path: str, questions_path: str, max_packets: int):
+    def __init__(self, file_path: str, questions_path: str):
         """
         Initialize the dataset object with the file provided
 
@@ -41,7 +41,6 @@ class Dataset:
             subquestions = item['subquestions']
             self.questions_subquestions[question] = subquestions
 
-        self.max_packets = max_packets
         self.questions_answers = self.__answer_question(self.__path)
         self.processed_file = self.__process_file(self.__path)
     
@@ -103,24 +102,19 @@ class Dataset:
 
         table_rows = []
 
-        num = 0
-
         for line in cap_lines:
-            if num < self.max_packets:
-                columns = re.split(match_tabs, line.strip())
+            columns = re.split(match_tabs, line.strip())
 
-                if "\u2192" in columns:
-                    # Remove it from list
-                    columns.remove("\u2192")
+            if "\u2192" in columns:
+                # Remove it from list
+                columns.remove("\u2192")
 
-                # Format columns elements before append them to the table
-                for i, col in enumerate(columns):
-                    col = col.strip().replace("\u2192", "->").replace('"', "'")
-                    columns[i] = col
+            # Format columns elements before append them to the table
+            for i, col in enumerate(columns):
+                col = col.strip().replace("\u2192", "->").replace('"', "'")
+                columns[i] = col
 
-                table_rows.append(columns)
-
-                num += 1
+            table_rows.append(columns)
 
         cap_formated = ""
 
@@ -139,8 +133,20 @@ class Dataset:
         Returns:
             dict: Dictionary with the questions and answers
         """
-        packets = rdpcap(file_path, count=self.max_packets)
+        packets = rdpcap(file_path)
         questions_answers = {}
+        total_size = 0
+        duration = 0
+
+        for packet in packets:
+            total_size += len(packet)
+
+        if len(packets) > 0:
+            start_time = packets[0].time
+            end_time = packets[-1].time
+            duration = end_time - start_time if end_time > start_time else 0
+        else:
+            duration = 0
 
         for question in self.questions_subquestions.keys():
             if question == "What is the total number of packets in the trace?":
@@ -149,26 +155,36 @@ class Dataset:
             elif question == "How many unique communicators are present in the trace?":
                 unique_communicators = set()
                 for packet in packets:
-                    if IP in packet:
-                        unique_communicators.add(packet[IP].src)
-                        unique_communicators.add(packet[IP].dst)
+                    if packet.haslayer('IP'):
+                        unique_communicators.add(packet['IP'].src)
+                        unique_communicators.add(packet['IP'].dst)
+                    elif packet.haslayer('IPv6'):
+                        unique_communicators.add(packet['IPv6'].src)
+                        unique_communicators.add(packet['IPv6'].dst)
                 questions_answers[question] = len(unique_communicators)
 
             elif question == "What is the IP that participates the most in communications in the trace?":
                 ip_count = {}
                 for packet in packets:
-                    if IP in packet:
-                        src_ip = packet[IP].src
-                        dst_ip = packet[IP].dst
+                    if packet.haslayer('IP'):
+                        src_ip = packet['IP'].src
+                        dst_ip = packet['IP'].dst
                         ip_count[src_ip] = ip_count.get(src_ip, 0) + 1
                         ip_count[dst_ip] = ip_count.get(dst_ip, 0) + 1
-                most_common_ip = max(ip_count, key=ip_count.get)
+                    elif packet.haslayer('IPv6'):
+                        src_ip = packet['IPv6'].src
+                        dst_ip = packet['IPv6'].dst
+                        ip_count[src_ip] = ip_count.get(src_ip, 0) + 1
+                        ip_count[dst_ip] = ip_count.get(dst_ip, 0) + 1
+                if ip_count:
+                    max_count = max(ip_count.values())
+                    most_common_ips = [ip for ip, count in ip_count.items() if count == max_count]
+                    most_common_ip = "Anyone of: " + " or ".join(most_common_ips) if len(most_common_ips) > 1 else most_common_ips[0]
+                else:
+                    most_common_ip = "No IP communications found"
                 questions_answers[question] = most_common_ip
 
             elif question == "What is the total size of transmitted bytes?":
-                total_size = 0
-                for packet in packets:
-                    total_size += len(packet)
                 questions_answers[question] = total_size
 
             elif question == "What is the average size of packets in bytes?":
@@ -176,29 +192,31 @@ class Dataset:
                 questions_answers[question] = average_size
 
             elif question == "What predominates in the capture: ICMP, TCP, or UDP?":
-                protocol_count = {'ICMP': 0, 'TCP': 0, 'UDP': 0}
+                protocol_count = {'ICMP': 0, 'ICMPv6': 0, 'TCP': 0, 'UDP': 0}
                 for packet in packets:
-                    if ICMP in packet:
+                    if packet.haslayer('ICMP'):
                         protocol_count['ICMP'] += 1
-                    elif TCP in packet:
+                    elif packet.haslayer('ICMPv6'):
+                        protocol_count['ICMPv6'] += 1
+                    elif packet.haslayer('TCP'):
                         protocol_count['TCP'] += 1
-                    elif UDP in packet:
+                    elif packet.haslayer('UDP'):
                         protocol_count['UDP'] += 1
-                predominant_protocol = max(protocol_count, key=protocol_count.get)
+                if sum(protocol_count.values()) == 0:
+                    predominant_protocol = "No ICMP, ICMPv6, TCP, or UDP packets found"
+                else:
+                    predominant_protocol = max(protocol_count, key=protocol_count.get)
                 questions_answers[question] = predominant_protocol
 
             elif question == "How long in seconds does the communication last?":
-                start_time = packets[0].time
-                end_time = packets[-1].time
-                duration = end_time - start_time
                 questions_answers[question] = duration
 
             elif question == "What is the average number of packets sent per second?":
-                average_packets_per_second = len(packets) / duration if duration > 0 else 0
+                average_packets_per_second = len(packets) / duration if duration > 0 else "There is only one packet in the trace, operation not possible"
                 questions_answers[question] = average_packets_per_second
 
             elif question == "What is the average bytes/s sent in the communication?":
-                average_bytes_per_second = total_size / duration if duration > 0 else 0
+                average_bytes_per_second = total_size / duration if duration > 0 else "There is only one packet in the trace, operation not possible"
                 questions_answers[question] = average_bytes_per_second
 
         return questions_answers
