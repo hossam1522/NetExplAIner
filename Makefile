@@ -26,7 +26,7 @@ install:
 	uv run pip install .
 
 test:
-	uv run pytest
+	PYTHONPATH=$(shell pwd) uv run pytest
 
 run:
 	uv run python3 -m netexplainer
