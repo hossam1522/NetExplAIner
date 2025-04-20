@@ -122,6 +122,8 @@ class Evaluator:
 
                             except Exception as e:
                                 print(f"Error processing question {question} in file {file}: {e}")
+                                subquestions_eval = "ERROR"
+                                answers_eval = "PROBLEM"
 
                         all_results.append({
                             "model": model,
