@@ -9,6 +9,7 @@ from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_mistralai.chat_models import ChatMistralAI
 from langchain_groq import ChatGroq
 from langchain_core.tools import tool
+from langchain_ollama.llms import OllamaLLM
 
 @tool
 def calculator(expression: str) -> str:
@@ -66,7 +67,6 @@ class LLM:
 
         generate_queries_decomposition = ( prompt_decomposition | self.model | StrOutputParser() | (lambda x: x.split("\n")))
         sub_questions = generate_queries_decomposition.invoke({"question":question})
-
         return sub_questions
 
     def answer_subquestion(self, question: str) -> str:
@@ -290,6 +290,52 @@ class LLM_MISTRAL_7B(LLM):
                 tools=[calculator],
             )
 
+class LLM_LLAMA2_7B(LLM):
+    """
+    Class for Llama 2 7B LLM
+    """
+    def __init__(self, data_path: str, tools: bool = False):
+        """
+        Initialize the LLM object with the file provided
+        Args:
+            data_path (str): The path of the file to process
+        """
+        super().__init__(data_path)
+
+        llm = OllamaLLM(
+            model="llama2:7b",
+        )
+
+        if not tools:
+            self.model = llm
+        else:
+            self.model = llm.bind_tools(
+                tools=[calculator],
+            )
+
+class LLM_MISTRAL_7B_Ollama(LLM):
+    """
+    Class for Mistral 7B LLM using Ollama
+    """
+    def __init__(self, data_path: str, tools: bool = False):
+        """
+        Initialize the LLM object with the file provided
+        Args:
+            data_path (str): The path of the file to process
+        """
+        super().__init__(data_path)
+
+        llm = OllamaLLM(
+            model="mistral:7b",
+        )
+
+        if not tools:
+            self.model = llm
+        else:
+            self.model = llm.bind_tools(
+                tools=[calculator],
+            )
+
 models = {
     "gemini-2.0-flash": LLM_GEMINI,
     "qwen-2.5-32b": LLM_QWEN_2_5_32B,
@@ -297,4 +343,6 @@ models = {
     "mistral-saba-24b": LLM_MISTRAL_SABA_24B,
     "gemma-3-27b": LLM_GEMMA_3,
     "mistral-7b": LLM_MISTRAL_7B,
+    "llama2-7b": LLM_LLAMA2_7B,
+    "mistral-7b-ollama": LLM_MISTRAL_7B_Ollama,
 }
