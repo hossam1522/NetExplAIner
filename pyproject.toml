@@ -22,7 +22,8 @@ dependencies = [
     "langchain-mistralai",
     "pandas",
     "plotly",
-    "kaleido"
+    "kaleido",
+    "langchain-ollama"
 ]
 requires-python = ">=3.10"
 readme = "README.md"
