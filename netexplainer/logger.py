@@ -2,7 +2,7 @@ import logging
 import sys
 from pathlib import Path
 
-def configure_logger(name: str, filepath: Path, level=logging.INFO) -> logging.Logger:
+def configure_logger(name: str, filepath: Path, level=logging.DEBUG) -> logging.Logger:
     """
     Configure a logger with both file and console handlers.
 
