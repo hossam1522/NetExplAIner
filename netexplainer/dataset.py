@@ -3,6 +3,11 @@ import os
 from subprocess import check_output
 import re
 import yaml
+import logging
+from netexplainer.logger import configure_logger
+
+configure_logger(name="dataset", filepath="netexplainer/data/evaluation/netexplainer.log")
+logger = logging.getLogger("dataset")
 
 
 class Dataset:
@@ -14,19 +19,25 @@ class Dataset:
             file_path (str): The path of the file to process
         """
         if not os.path.exists(file_path):
+            logger.error(f'The path {file_path} does not exist')
             raise FileNotFoundError(f'The path {file_path} does not exist')
         elif not os.path.isfile(file_path):
+            logger.error(f'The path {file_path} is not a file, please provide a file')
             raise FileExistsError(f'The path {file_path} is not a file, please provide a file')
         elif not file_path.endswith('.pcap') and not file_path.endswith('.pcapng') and not file_path.endswith('.cap'):
+            logger.error(f'The file {file_path} is not a network file, please provide a pcap or pcapng file')
             raise TypeError(f'The file {file_path} is not a network file, please provide a pcap or pcapng file')
         else:
             self.__path = os.path.abspath(file_path)
 
         if not os.path.exists(questions_path):
+            logger.error(f'The path {questions_path} does not exist')
             raise FileNotFoundError(f'The path {questions_path} does not exist')
         elif not os.path.isfile(questions_path):
+            logger.error(f'The path {questions_path} is not a file, please provide a file')
             raise FileExistsError(f'The path {questions_path} is not a file, please provide a file')
         elif not questions_path.endswith('.yaml'):
+            logger.error(f'The file {questions_path} is not a yaml file, please provide a yaml file')
             raise TypeError(f'The file {questions_path} is not a yaml file, please provide a yaml file')
         else:
             self.__questions_path = os.path.abspath(questions_path)
@@ -54,11 +65,13 @@ class Dataset:
         Returns:
             str: The path of the processed file
         """
+        logger.debug(f'Processing file {file_path}')
         packets = self.__cap_to_str(file_path)
         txt_file_path = file_path.replace('.pcapng', '.txt').replace('.pcap', '.txt').replace('.cap', '.txt')
         with open(txt_file_path, 'w') as f:
             f.write("No.|Time|Source|Destination|Protocol|Length|Info\n")
             f.write(packets)
+        logger.debug(f'File {file_path} processed and saved as {txt_file_path}')
         return txt_file_path
 
     def __cap_to_str(self, file: str) -> str:
@@ -71,6 +84,7 @@ class Dataset:
         Returns:
             str: The capture in string format
         """
+        logger.debug(f'Converting file {file} to string')
         try:
             out = check_output(
                 [
@@ -81,8 +95,10 @@ class Dataset:
                     "tabs",
                 ]
             )
+            logger.debug(f'File {file} converted to string')
             return self.__clean_cap_format(out.decode("utf-8"))
         except Exception as e:
+            logger.error(f"Error converting file {file} to string: {e}")
             raise Exception(f"Fail reading the file. ERROR: {e}")
 
     def __clean_cap_format(self, cap: str) -> str:
@@ -95,6 +111,7 @@ class Dataset:
         Returns:
             str: The cleaned capture
         """
+        logger.debug(f'Cleaning capture format')
         # Split the string by lines
         cap_lines = cap.strip().split("\n")
 
@@ -121,6 +138,7 @@ class Dataset:
         for row in table_rows:
             cap_formated += " | ".join(row) + "\n"
 
+        logger.debug(f'Capture format cleaned')
         return cap_formated
 
     def __answer_question(self, file_path: str) -> dict:
@@ -133,6 +151,7 @@ class Dataset:
         Returns:
             dict: Dictionary with the questions and answers
         """
+        logger.debug(f'Answering questions for file {file_path}')
         packets = rdpcap(file_path)
         questions_answers = {}
         total_size = 0
@@ -219,4 +238,5 @@ class Dataset:
                 average_bytes_per_second = total_size / duration if duration > 0 else "There is only one packet in the trace, operation not possible"
                 questions_answers[question] = average_bytes_per_second
 
+        logger.debug(f'Questions answered for file {file_path}')
         return questions_answers

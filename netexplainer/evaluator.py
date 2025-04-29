@@ -11,7 +11,7 @@ from netexplainer.logger import configure_logger
 from langchain_core.output_parsers import StrOutputParser
 from langchain.prompts import ChatPromptTemplate
 
-configure_logger(name="evaluator", filepath="netexplainer.log")
+configure_logger(name="evaluator", filepath="netexplainer/data/evaluation/netexplainer.log")
 logger = logging.getLogger("evaluator")
 QUESTIONS_PATH = "netexplainer/data/questions.yaml"
 
@@ -94,14 +94,14 @@ class Evaluator:
                     continue
 
                 try:
-                    logger.info(f"Processing file: {file} with model: {model}")
+                    logger.debug(f"Processing file: {file} with model: {model}")
                     dataset = Dataset(os.path.join("netexplainer/data/cleaned/", file), QUESTIONS_PATH)
                     llm = models[f"{model}"](dataset.processed_file, tools=tools)
 
                     for question in dataset.questions_subquestions.keys():
-                        logger.info(f"Processing question: {question} with model: {model}")
+                        logger.debug(f"Processing question: {question} with model: {model}")
                         for _ in range(10):
-                            logger.info(f"Attempting to process question: {question} with model: {model}, attempt: {_ + 1}")
+                            logger.debug(f"Attempting to process question: {question} with model: {model}, attempt: {_ + 1}")
                             try:
                                 subquestions = llm.get_subquestions(question)
 
@@ -145,17 +145,18 @@ class Evaluator:
                         })
 
                         if tools:
-                            print(f"Model: {model}_tools, File: {file}, Question: {question}, Subquestions Eval: {subquestions_eval}, Answer Eval: {answers_eval}")
                             logger.info(f"Model: {model}_tools, File: {file}, Question: {question}, Subquestions Eval: {subquestions_eval}, Answer Eval: {answers_eval}")
                         else:
-                            print(f"Model: {model}, File: {file}, Question: {question}, Subquestions Eval: {subquestions_eval}, Answer Eval: {answers_eval}")
                             logger.info(f"Model: {model}, File: {file}, Question: {question}, Subquestions Eval: {subquestions_eval}, Answer Eval: {answers_eval}")
 
                 except Exception as e:
                     logger.error(f"Error processing file {file} with model {model}: {e}")
 
+        logger.debug("Generating pie charts")
         self.generate_pie_charts(all_results, tools)
+        logger.debug("Generating bar charts")
         self.generate_bar_charts(all_results, tools)
+        logger.debug("Generating model subquestions charts")
         self.generate_model_subquestions_chart(all_results, tools)
 
     def generate_model_subquestions_chart(self, results: list, tools: bool = False) -> None:
@@ -225,10 +226,8 @@ class Evaluator:
                 height=600
             )
 
-            print(f"\n\n")
             for question in sorted_questions:
-                print(f"Model: {model}, Question: {question}, Similarity: {avg_values[sorted_questions.index(question)]}")
-            print(f"\n\n")
+                logger.info(f"Model: {model}, Question: {question}, Similarity: {avg_values[sorted_questions.index(question)]}")
 
             dir_path = ""
             if tools:
@@ -290,10 +289,8 @@ class Evaluator:
                 margin=dict(t=60)
             )
 
-            print(f"\n\n")
             for question in sorted_questions:
-                print(f"Model: {model}, Question: {question}, Correct: {questions[question]['YES']}, Incorrect: {questions[question]['NO']}")
-            print(f"\n\n")
+                logger.info(f"Model: {model}, Question: {question}, Correct: {questions[question]['YES']}, Incorrect: {questions[question]['NO']}")
 
             dir_path = ""
             if tools:
@@ -350,10 +347,8 @@ class Evaluator:
                 color_discrete_sequence=px.colors.qualitative.Pastel
             )
 
-            print(f"\n\n")
             for label, value in zip(labels, values):
-                print(f"Model: {model}, {label}: {value}%")
-            print(f"\n\n")
+                logger.info(f"Model: {model}, {label}: {value}%")
 
             dir_path = ""
             if tools:
