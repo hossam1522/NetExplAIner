@@ -4,9 +4,10 @@ from subprocess import check_output
 import re
 import yaml
 import logging
+from pathlib import Path
 from netexplainer.logger import configure_logger
 
-configure_logger(name="dataset", filepath="netexplainer/data/evaluation/netexplainer.log")
+configure_logger(name="dataset", filepath=Path(__file__) / "data/evaluation/netexplainer.log")
 logger = logging.getLogger("dataset")
 
 

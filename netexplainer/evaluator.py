@@ -2,6 +2,7 @@ import os
 import time
 import re
 import logging
+from pathlib import Path
 import plotly.express as px
 import plotly.graph_objects as go
 from netexplainer.dataset import Dataset
@@ -11,7 +12,7 @@ from netexplainer.logger import configure_logger
 from langchain_core.output_parsers import StrOutputParser
 from langchain.prompts import ChatPromptTemplate
 
-configure_logger(name="evaluator", filepath="netexplainer/data/evaluation/netexplainer.log")
+configure_logger(name="evaluator", filepath=Path(__file__) / "data/evaluation/netexplainer.log")
 logger = logging.getLogger("evaluator")
 QUESTIONS_PATH = "netexplainer/data/questions.yaml"
 

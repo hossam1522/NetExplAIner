@@ -2,6 +2,7 @@ import os
 import math
 import numexpr
 import logging
+from pathlib import Path
 from dotenv import load_dotenv
 from netexplainer.logger import configure_logger
 from langchain_community.document_loaders import TextLoader
@@ -13,7 +14,7 @@ from langchain_groq import ChatGroq
 from langchain_core.tools import tool
 from langchain_ollama.llms import OllamaLLM
 
-configure_logger(name="llm", filepath="netexplainer/data/evaluation/netexplainer.log")
+configure_logger(name="llm", filepath=Path(__file__) / "data/evaluation/netexplainer.log")
 logger = logging.getLogger("llm")
 
 
