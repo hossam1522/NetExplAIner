@@ -227,15 +227,20 @@ class Evaluator:
                 height=600
             )
 
-            for question in sorted_questions:
-                logger.info(f"Model: {model}, Question: {question}, Similarity: {avg_values[sorted_questions.index(question)]}")
-
             dir_path = ""
             if tools:
                 dir_path = f"netexplainer/data/evaluation/{model}_tools/"
             else:
                 dir_path = f"netexplainer/data/evaluation/{model}/"
             os.makedirs(dir_path, exist_ok=True)
+
+            with open(f"{dir_path}subquestions_similarity.txt", "w") as f:
+                f.write(f"Model: {model}\n")
+                f.write(f"Subquestions similarity:\n")
+                for question in sorted_questions:
+                    f.write(f"{question}: {avg_values[sorted_questions.index(question)]}\n")
+                    logger.info(f"Model: {model}, Question: {question}, Similarity: {avg_values[sorted_questions.index(question)]}")
+
             fig.write_image(f"{dir_path}radar_subquestions_similarity.png")
 
     def generate_bar_charts(self, results: list, tools: bool = False) -> None:
@@ -290,15 +295,20 @@ class Evaluator:
                 margin=dict(t=60)
             )
 
-            for question in sorted_questions:
-                logger.info(f"Model: {model}, Question: {question}, Correct: {questions[question]['YES']}, Incorrect: {questions[question]['NO']}")
-
             dir_path = ""
             if tools:
                 dir_path = f"netexplainer/data/evaluation/{model}_tools/"
             else:
                 dir_path = f"netexplainer/data/evaluation/{model}/"
             os.makedirs(dir_path, exist_ok=True)
+
+            with open(f"{dir_path}answers.txt", "w") as f:
+                f.write(f"Model: {model}\n")
+                f.write(f"Correct and incorrect answers:\n")
+                for question in sorted_questions:
+                    f.write(f"{question}: Correct: {questions[question]['YES']}, Incorrect: {questions[question]['NO']}\n")
+                    logger.info(f"Model: {model}, Question: {question}, Correct: {questions[question]['YES']}, Incorrect: {questions[question]['NO']}")
+
             fig.write_image(f"{dir_path}grouped_bar_answers.png")
 
     def generate_pie_charts(self, results: list, tools: bool = False) -> None:
@@ -348,13 +358,18 @@ class Evaluator:
                 color_discrete_sequence=px.colors.qualitative.Pastel
             )
 
-            for label, value in zip(labels, values):
-                logger.info(f"Model: {model}, {label}: {value}%")
-
             dir_path = ""
             if tools:
                 dir_path = f"netexplainer/data/evaluation/{model}_tools/"
             else:
                 dir_path = f"netexplainer/data/evaluation/{model}/"
             os.makedirs(dir_path, exist_ok=True)
+
+            with open(f"{dir_path}answers_pie_chart.txt", "w") as f:
+                f.write(f"Model: {model}\n")
+                f.write(f"Correct and incorrect answers:\n")
+                for label, value in zip(labels, values):
+                    f.write(f"{label}: {value}%\n")
+                    logger.info(f"Model: {model}, {label}: {value}%")
+
             fig.write_image(f"{dir_path}answers_pie_chart.png")
