@@ -1,7 +1,10 @@
 import os
 import math
 import numexpr
+import logging
+from pathlib import Path
 from dotenv import load_dotenv
+from netexplainer.logger import configure_logger
 from langchain_community.document_loaders import TextLoader
 from langchain_core.output_parsers import StrOutputParser
 from langchain.prompts import ChatPromptTemplate
@@ -10,6 +13,10 @@ from langchain_mistralai.chat_models import ChatMistralAI
 from langchain_groq import ChatGroq
 from langchain_core.tools import tool
 from langchain_ollama.llms import OllamaLLM
+
+configure_logger(name="llm", filepath=Path(__file__).parent / "data/evaluation/netexplainer.log")
+logger = logging.getLogger("llm")
+
 
 @tool
 def calculator(expression: str) -> str:
@@ -23,6 +30,7 @@ def calculator(expression: str) -> str:
         "37593 * 67" for "37593 times 67"
         "37593**(1/5)" for "37593^(1/5)"
     """
+    logger.debug(f"Calculator tool called with expression: {expression}")
     local_dict = {"pi": math.pi, "e": math.e}
     return str(
         numexpr.evaluate(
@@ -40,10 +48,13 @@ class LLM:
             data_path (str): The path of the file to process
         """
         if not os.path.exists(data_path):
+            logger.error(f'The path {data_path} does not exist')
             raise FileNotFoundError(f'The path {data_path} does not exist')
         elif not os.path.isfile(data_path):
+            logger.error(f'The path {data_path} is not a file, please provide a file')
             raise FileExistsError(f'The path {data_path} is not a file, please provide a file')
         elif not data_path.endswith('.txt'):
+            logger.error(f'The file {data_path} is not a text file, please provide a txt file')
             raise TypeError(f'The file {data_path} is not a text file, please provide a txt file')
 
         load_dotenv()
@@ -67,6 +78,7 @@ class LLM:
 
         generate_queries_decomposition = ( prompt_decomposition | self.model | StrOutputParser() | (lambda x: x.split("\n")))
         sub_questions = generate_queries_decomposition.invoke({"question":question})
+        logger.debug(f"Model: {self.model}, Question: {question}, Sub-questions generated: {sub_questions}")
         return sub_questions
 
     def answer_subquestion(self, question: str) -> str:
@@ -93,7 +105,7 @@ class LLM:
         )
 
         answer = chain.invoke({"traces": self.file[0].page_content, "question": question})
-
+        logger.debug(f"Model: {self.model}, Question: {question}, Answer: {answer}")
         return answer
 
     def format_qa_pairs(self, questions: list, answers: list) -> str:
@@ -130,6 +142,7 @@ class LLM:
             | StrOutputParser()
         )
         final_answer = chain.invoke({"context": self.format_qa_pairs(subquestions, answers), "question": question})
+        logger.debug(f"Model: {self.model}, Question: {question}, Final answer: {final_answer}")
         return final_answer
 
 
@@ -155,10 +168,12 @@ class LLM_GEMINI(LLM):
 
         if not tools:
             self.model = llm
+            logger.debug("Using Gemini 2.0 Flash LLM without tools")
         else:
             self.model = llm.bind_tools(
                 tools=[calculator],
             )
+            logger.debug("Using Gemini 2.0 Flash LLM with tools")
 
 class LLM_QWEN_2_5_32B(LLM):
     """
@@ -180,10 +195,12 @@ class LLM_QWEN_2_5_32B(LLM):
 
         if not tools:
             self.model = llm
+            logger.debug("Using Qwen 2.5 32B LLM without tools")
         else:
             self.model = llm.bind_tools(
                 tools=[calculator],
             )
+            logger.debug("Using Qwen 2.5 32B LLM with tools")
 
 
 class LLM_LLAMA_3_8B(LLM):
@@ -206,10 +223,12 @@ class LLM_LLAMA_3_8B(LLM):
 
         if not tools:
             self.model = llm
+            logger.debug("Using Llama 3.3 70B Versatile LLM without tools")
         else:
             self.model = llm.bind_tools(
                 tools=[calculator],
             )
+            logger.debug("Using Llama 3.3 70B Versatile LLM with tools")
 
 class LLM_MISTRAL_SABA_24B(LLM):
     """
@@ -231,10 +250,12 @@ class LLM_MISTRAL_SABA_24B(LLM):
 
         if not tools:
             self.model = llm
+            logger.debug("Using Mistral Saba 24B LLM without tools")
         else:
             self.model = llm.bind_tools(
                 tools=[calculator],
             )
+            logger.debug("Using Mistral Saba 24B LLM with tools")
 
 class LLM_GEMMA_3(LLM):
     """
@@ -258,10 +279,12 @@ class LLM_GEMMA_3(LLM):
 
         if not tools:
             self.model = llm
+            logger.debug("Using Gemma 3 LLM without tools")
         else:
             self.model = llm.bind_tools(
                 tools=[calculator],
             )
+            logger.debug("Using Gemma 3 LLM with tools")
 
 class LLM_MISTRAL_7B(LLM):
     """
@@ -285,10 +308,12 @@ class LLM_MISTRAL_7B(LLM):
 
         if not tools:
             self.model = llm
+            logger.debug("Using Mistral 7B LLM without tools")
         else:
             self.model = llm.bind_tools(
                 tools=[calculator],
             )
+            logger.debug("Using Mistral 7B LLM with tools")
 
 class LLM_LLAMA2_7B(LLM):
     """
@@ -308,10 +333,12 @@ class LLM_LLAMA2_7B(LLM):
 
         if not tools:
             self.model = llm
+            logger.debug("Using Llama 2 7B LLM without tools")
         else:
             self.model = llm.bind_tools(
                 tools=[calculator],
             )
+            logger.debug("Using Llama 2 7B LLM with tools")
 
 class LLM_MISTRAL_7B_Ollama(LLM):
     """
@@ -331,10 +358,12 @@ class LLM_MISTRAL_7B_Ollama(LLM):
 
         if not tools:
             self.model = llm
+            logger.debug("Using Mistral 7B LLM using Ollama without tools")
         else:
             self.model = llm.bind_tools(
                 tools=[calculator],
             )
+            logger.debug("Using Mistral 7B LLM using Ollama with tools")
 
 models = {
     "gemini-2.0-flash": LLM_GEMINI,

@@ -85,35 +85,43 @@ def test_clean_raw_data_packet_count(tmpdir):
 
         assert os.listdir(str(cleaned_path)) == ['small.pcap']
 
-def test_clean_raw_data_existing_dir(tmpdir, capsys):
+def test_clean_raw_data_existing_dir(tmpdir):
     """Test existing directory handling"""
+    from netexplainer.scraper import Scraper
+
     raw_path = tmpdir.mkdir("raw")
     cleaned_path = tmpdir.mkdir("cleaned")
     (cleaned_path / "existing.txt").write("")
 
     with patch('netexplainer.scraper.DATASET_PATH', str(raw_path)), \
-         patch('netexplainer.scraper.CLEANED_PATH', str(cleaned_path)):
+         patch('netexplainer.scraper.CLEANED_PATH', str(cleaned_path)), \
+         patch('netexplainer.scraper.logger') as mock_logger:
 
         scraper = Scraper()
         scraper.clean_raw_data(max_packets=10, data_path=str(raw_path))
 
-        captured = capsys.readouterr()
-        assert "already exists and is not empty" in captured.out
+        mock_logger.info.assert_called_with(
+            f"Directory {cleaned_path} already exists and is not empty. Skipping creation."
+        )
         assert len(os.listdir(str(cleaned_path))) == 1
 
-def test_clean_raw_data_error_handling(tmpdir, capsys):
+def test_clean_raw_data_error_handling(tmpdir):
     """Test error handling during processing"""
+    from netexplainer.scraper import Scraper
+
     raw_path = tmpdir.mkdir("raw")
     cleaned_path = tmpdir.mkdir("cleaned")
-    (raw_path / "corrupted.pcap").write("invalid data")
+    (raw_path / "corrupted.pcap").write(b"invalid data")
 
-    with patch('scapy.all.rdpcap', side_effect=Scapy_Exception("Invalid file")), \
+    with patch('netexplainer.scraper.rdpcap', side_effect=Scapy_Exception("Invalid file")), \
          patch('netexplainer.scraper.DATASET_PATH', str(raw_path)), \
-         patch('netexplainer.scraper.CLEANED_PATH', str(cleaned_path)):
+         patch('netexplainer.scraper.CLEANED_PATH', str(cleaned_path)), \
+         patch('netexplainer.scraper.logger') as mock_logger:
 
         scraper = Scraper()
         scraper.clean_raw_data(max_packets=10, data_path=str(raw_path))
 
-        captured = capsys.readouterr()
-        assert "Error processing file corrupted.pcap" in captured.out
+        mock_logger.error.assert_called_with(
+            "Error processing file corrupted.pcap: Invalid file"
+        )
         assert len(os.listdir(str(cleaned_path))) == 0
