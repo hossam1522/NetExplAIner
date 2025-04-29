@@ -303,7 +303,7 @@ class LLM_LLAMA2_7B(LLM):
         super().__init__(data_path)
 
         llm = OllamaLLM(
-            model="llama2:7b",
+            model="llama2",
         )
 
         if not tools:
@@ -326,7 +326,7 @@ class LLM_MISTRAL_7B_Ollama(LLM):
         super().__init__(data_path)
 
         llm = OllamaLLM(
-            model="mistral:7b",
+            model="mistral",
         )
 
         if not tools:
