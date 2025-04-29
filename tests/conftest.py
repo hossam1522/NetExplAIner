@@ -4,12 +4,11 @@ from pathlib import Path
 import tempfile
 
 @pytest.fixture(autouse=True)
-def configure_logging(tmp_path):
+def configure_loggers(tmp_path):
     log_file = tmp_path / "tests.log"
 
     root_logger = logging.getLogger()
-    for handler in root_logger.handlers[:]:
-        root_logger.removeHandler(handler)
+    root_logger.handlers.clear()
 
     formatter = logging.Formatter("%(levelname)s - %(message)s")
 
@@ -23,17 +22,13 @@ def configure_logging(tmp_path):
     root_logger.addHandler(console_handler)
     root_logger.setLevel(logging.DEBUG)
 
-    app_loggers = ["netexplainer", "scraper", "dataset", "llm"]
-    for name in app_loggers:
+    loggers = ["netexplainer", "scraper", "dataset", "llm"]
+    for name in loggers:
         logger = logging.getLogger(name)
-        logger.handlers = []
+        logger.handlers.clear()
         logger.addHandler(file_handler)
         logger.addHandler(console_handler)
         logger.setLevel(logging.DEBUG)
         logger.propagate = False
 
     yield
-
-    for handler in root_logger.handlers[:]:
-        root_logger.removeHandler(handler)
-        handler.close()
