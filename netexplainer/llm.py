@@ -67,7 +67,6 @@ class LLM:
 
         generate_queries_decomposition = ( prompt_decomposition | self.model | StrOutputParser() | (lambda x: x.split("\n")))
         sub_questions = generate_queries_decomposition.invoke({"question":question})
-        print(f"{sub_questions}")
         return sub_questions
 
     def answer_subquestion(self, question: str) -> str:
