@@ -36,7 +36,7 @@ def test_download_captures(tmpdir):
             scraper = Scraper()
             scraper.download_captures()
 
-            assert os.listdir(str(tmpdir)) == ['file.pcap']
+            assert os.listdir(str(tmpdir)) == ['file.pcap', 'tests.log']
             with open(os.path.join(str(tmpdir), 'file.pcap'), 'rb') as f:
                 assert f.read() == b'file content'
 
