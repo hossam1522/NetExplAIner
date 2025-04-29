@@ -20,6 +20,12 @@ def configure_logger(name: str, filepath: Path, level=logging.DEBUG) -> logging.
     if logger.handlers:
         return logger
 
+    try:
+        filepath.parent.mkdir(parents=True, exist_ok=True)
+    except Exception as e:
+        logging.error(f"Error creating log directory: {e}")
+        return logger
+
     fmt = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
     date_fmt = "%Y-%m-%d %H:%M:%S"
     formatter = logging.Formatter(fmt, datefmt=date_fmt)

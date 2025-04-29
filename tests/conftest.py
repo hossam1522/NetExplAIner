@@ -1,7 +1,5 @@
 import pytest
 import logging
-from pathlib import Path
-import tempfile
 
 @pytest.fixture(autouse=True)
 def configure_loggers(tmp_path):
