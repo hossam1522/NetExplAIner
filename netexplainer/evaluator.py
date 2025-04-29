@@ -1,14 +1,18 @@
 import os
 import time
 import re
+import logging
 import plotly.express as px
 import plotly.graph_objects as go
 from netexplainer.dataset import Dataset
 from netexplainer.llm import models
 from netexplainer.dataset import Dataset
+from netexplainer.logger import configure_logger
 from langchain_core.output_parsers import StrOutputParser
 from langchain.prompts import ChatPromptTemplate
 
+configure_logger(name="evaluator", filepath="netexplainer.log")
+logger = logging.getLogger("evaluator")
 QUESTIONS_PATH = "netexplainer/data/questions.yaml"
 
 
@@ -42,6 +46,7 @@ class Evaluator:
             | StrOutputParser()
         )
         answer = chain.invoke({"question": question, "subquestions_LLM": subquestions, "subquestions": dataset.questions_subquestions[question]})
+        logger.debug(f"Question: {question}, Subquestions LLM: {subquestions}, Subquestions: {dataset.questions_subquestions[question]}, Similarity: {answer}")
         return answer
 
     def evaluate_answer(self, question: str, answer: str, dataset: Dataset) -> str:
@@ -70,6 +75,7 @@ class Evaluator:
             | StrOutputParser()
         )
         answer = chain.invoke({"question": question, "answer_LLM": answer, "answer": dataset.questions_answers[question]})
+        logger.debug(f"Question: {question}, Answer LLM: {answer}, Answer: {dataset.questions_answers[question]}, Comparison: {answer}")
         return answer
 
     def evaluate(self, models_to_evaluate: list, tools: bool = False) -> None:
@@ -88,11 +94,14 @@ class Evaluator:
                     continue
 
                 try:
+                    logger.info(f"Processing file: {file} with model: {model}")
                     dataset = Dataset(os.path.join("netexplainer/data/cleaned/", file), QUESTIONS_PATH)
                     llm = models[f"{model}"](dataset.processed_file, tools=tools)
 
                     for question in dataset.questions_subquestions.keys():
+                        logger.info(f"Processing question: {question} with model: {model}")
                         for _ in range(10):
+                            logger.info(f"Attempting to process question: {question} with model: {model}, attempt: {_ + 1}")
                             try:
                                 subquestions = llm.get_subquestions(question)
 
@@ -109,19 +118,21 @@ class Evaluator:
                                     time.sleep(2)
                                     subquestions_eval = self.evaluate_subquestions(question, subquestions, dataset)
                                 except Exception as e:
+                                    logger.error(f"Error evaluating subquestions: {e}")
                                     subquestions_eval = "ERROR"
 
                                 try:
                                     time.sleep(2)
                                     answers_eval = self.evaluate_answer(question, final_answer, dataset)
                                 except Exception as e:
+                                    logger.error(f"Error evaluating answers: {e}")
                                     answers_eval = "PROBLEM"
 
                                 if subquestions_eval != "ERROR" and answers_eval != "PROBLEM":
                                     break
 
                             except Exception as e:
-                                print(f"Error processing question {question} in file {file}: {e}")
+                                logger.error(f"Error processing question {question} in file {file}: {e}")
                                 subquestions_eval = "ERROR"
                                 answers_eval = "PROBLEM"
 
@@ -135,11 +146,13 @@ class Evaluator:
 
                         if tools:
                             print(f"Model: {model}_tools, File: {file}, Question: {question}, Subquestions Eval: {subquestions_eval}, Answer Eval: {answers_eval}")
+                            logger.info(f"Model: {model}_tools, File: {file}, Question: {question}, Subquestions Eval: {subquestions_eval}, Answer Eval: {answers_eval}")
                         else:
                             print(f"Model: {model}, File: {file}, Question: {question}, Subquestions Eval: {subquestions_eval}, Answer Eval: {answers_eval}")
+                            logger.info(f"Model: {model}, File: {file}, Question: {question}, Subquestions Eval: {subquestions_eval}, Answer Eval: {answers_eval}")
 
                 except Exception as e:
-                    print(f"Error processing file {file}: {e}")
+                    logger.error(f"Error processing file {file} with model {model}: {e}")
 
         self.generate_pie_charts(all_results, tools)
         self.generate_bar_charts(all_results, tools)

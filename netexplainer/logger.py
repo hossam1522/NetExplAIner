@@ -38,10 +38,3 @@ def configure_logger(name: str, filepath: Path, level=logging.INFO) -> logging.L
     logger.propagate = False
     
     return logger
-
-if __name__ == "__main__":
-    logger = configure_logger(
-        name="netexplainer",
-        filepath=Path("netexplainer.log"),
-        level=logging.DEBUG
-    )

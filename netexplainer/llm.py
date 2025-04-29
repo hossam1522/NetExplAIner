@@ -3,6 +3,7 @@ import math
 import numexpr
 import logging
 from dotenv import load_dotenv
+from netexplainer.logger import configure_logger
 from langchain_community.document_loaders import TextLoader
 from langchain_core.output_parsers import StrOutputParser
 from langchain.prompts import ChatPromptTemplate
@@ -12,7 +13,9 @@ from langchain_groq import ChatGroq
 from langchain_core.tools import tool
 from langchain_ollama.llms import OllamaLLM
 
-logger = logging.getLogger("netexplainer")
+configure_logger(name="llm", filepath="netexplainer.log")
+logger = logging.getLogger("llm")
+
 
 @tool
 def calculator(expression: str) -> str:
