@@ -14,7 +14,7 @@ from langchain_groq import ChatGroq
 from langchain_core.tools import tool
 from langchain_ollama.llms import OllamaLLM
 
-configure_logger(name="llm", filepath=Path(__file__) / "data/evaluation/netexplainer.log")
+configure_logger(name="llm", filepath=Path(__file__).parent / "data/evaluation/netexplainer.log")
 logger = logging.getLogger("llm")
 
 

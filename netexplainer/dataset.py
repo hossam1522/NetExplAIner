@@ -7,7 +7,7 @@ import logging
 from pathlib import Path
 from netexplainer.logger import configure_logger
 
-configure_logger(name="dataset", filepath=Path(__file__) / "data/evaluation/netexplainer.log")
+configure_logger(name="dataset", filepath=Path(__file__).parent / "data/evaluation/netexplainer.log")
 logger = logging.getLogger("dataset")
 
 

@@ -7,7 +7,7 @@ from netexplainer.scraper import Scraper
 from netexplainer.logger import configure_logger
 from netexplainer.evaluator import Evaluator, QUESTIONS_PATH
 
-configure_logger(name="main", filepath=Path(__file__) / "data/evaluation/netexplainer.log")
+configure_logger(name="main", filepath=Path(__file__).parent / "data/evaluation/netexplainer.log")
 logger = logging.getLogger("main")
 
 

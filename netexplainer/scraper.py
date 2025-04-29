@@ -8,7 +8,7 @@ from pathlib import Path
 from scapy.all import rdpcap
 from netexplainer.logger import configure_logger
 
-configure_logger(name="scraper", filepath=Path(__file__) / "data/evaluation/netexplainer.log")
+configure_logger(name="scraper", filepath=Path(__file__).parent / "data/evaluation/netexplainer.log")
 logger = logging.getLogger("scraper")
 DATASET_PATH = os.path.join(os.getcwd(), "netexplainer/data/raw")
 CLEANED_PATH = os.path.join(os.getcwd(), "netexplainer/data/cleaned")

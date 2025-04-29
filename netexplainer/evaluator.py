@@ -12,7 +12,7 @@ from netexplainer.logger import configure_logger
 from langchain_core.output_parsers import StrOutputParser
 from langchain.prompts import ChatPromptTemplate
 
-configure_logger(name="evaluator", filepath=Path(__file__) / "data/evaluation/netexplainer.log")
+configure_logger(name="evaluator", filepath=Path(__file__).parent / "data/evaluation/netexplainer.log")
 logger = logging.getLogger("evaluator")
 QUESTIONS_PATH = "netexplainer/data/questions.yaml"
 
