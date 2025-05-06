@@ -365,13 +365,17 @@ class LLM_MISTRAL_7B_Ollama(LLM):
             )
             logger.debug("Using Mistral 7B LLM using Ollama with tools")
 
+"""
+This dictionary maps model names to their respective LLM classes and
+if windows context size is small or big.
+"""
 models = {
-    "gemini-2.0-flash": LLM_GEMINI,
-    "qwen-2.5-32b": LLM_QWEN_2_5_32B,
-    "llama3-8b-8192": LLM_LLAMA_3_8B,
-    "mistral-saba-24b": LLM_MISTRAL_SABA_24B,
-    "gemma-3-27b": LLM_GEMMA_3,
-    "mistral-7b": LLM_MISTRAL_7B,
-    "llama2-7b": LLM_LLAMA2_7B,
-    "mistral-7b-ollama": LLM_MISTRAL_7B_Ollama,
+    "gemini-2.0-flash": (LLM_GEMINI, "big"),
+    "qwen-2.5-32b": (LLM_QWEN_2_5_32B, "big"),
+    "llama3-8b-8192": (LLM_LLAMA_3_8B, "small"),
+    "mistral-saba-24b": (LLM_MISTRAL_SABA_24B, "big"),
+    "gemma-3-27b": (LLM_GEMMA_3, "big"),
+    "mistral-7b": (LLM_MISTRAL_7B, "big"),
+    "llama2-7b": (LLM_LLAMA2_7B, "small"),
+    "mistral-7b-ollama": (LLM_MISTRAL_7B_Ollama, "big"),
 }
