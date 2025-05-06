@@ -12,12 +12,14 @@ logger = logging.getLogger("dataset")
 
 
 class Dataset:
-    def __init__(self, file_path: str, questions_path: str):
+    def __init__(self, file_path: str, questions_path: str, windows_context_size: str):
         """
         Initialize the dataset object with the file provided
 
         Args:
             file_path (str): The path of the file to process
+            questions_path (str): The path of the questions file
+            windows_context_size (str): The size of the context window of the LLM
         """
         if not os.path.exists(file_path):
             logger.error(f'The path {file_path} does not exist')
@@ -54,33 +56,38 @@ class Dataset:
             self.questions_subquestions[question] = subquestions
 
         self.questions_answers = self.__answer_question(self.__path)
-        self.processed_file = self.__process_file(self.__path)
+        self.processed_file = self.__process_file(self.__path, windows_context_size)
     
-    def __process_file(self, file_path: str) -> str:
+    def __process_file(self, file_path: str, windows_context_size: str) -> str:
         """
         Process the file and convert it to txt format
         
         Args:
             file_path (str): The path of the file to process
+            windows_context_size (str): The size of the context window of the LLM
 
         Returns:
             str: The path of the processed file
         """
         logger.debug(f'Processing file {file_path}')
-        packets = self.__cap_to_str(file_path)
+        packets = self.__cap_to_str(file_path, windows_context_size)
         txt_file_path = file_path.replace('.pcapng', '.txt').replace('.pcap', '.txt').replace('.cap', '.txt')
         with open(txt_file_path, 'w') as f:
-            f.write("No.|Time|Source|Destination|Protocol|Length|Info\n")
+            if windows_context_size == "Big":
+                f.write("No.|Time|Source|Destination|Protocol|Length|Info\n")
+            else:
+                f.write("No.|Time|Source|Destination|Protocol|Length\n")
             f.write(packets)
         logger.debug(f'File {file_path} processed and saved as {txt_file_path}')
         return txt_file_path
 
-    def __cap_to_str(self, file: str) -> str:
+    def __cap_to_str(self, file: str, windows_context_size: str) -> str:
         """
         Convert the pcap file to a string using tshark
 
         Args:
-            file (str): The path of the file to processç
+            file (str): The path of the file to process
+            windows_context_size (str): The size of the context window of the LLM
 
         Returns:
             str: The capture in string format
@@ -97,17 +104,18 @@ class Dataset:
                 ]
             )
             logger.debug(f'File {file} converted to string')
-            return self.__clean_cap_format(out.decode("utf-8"))
+            return self.__clean_cap_format(out.decode("utf-8"), windows_context_size)
         except Exception as e:
             logger.error(f"Error converting file {file} to string: {e}")
             raise Exception(f"Fail reading the file. ERROR: {e}")
 
-    def __clean_cap_format(self, cap: str) -> str:
+    def __clean_cap_format(self, cap: str, windows_context_size: str) -> str:
         """
         Clean the capture format to a more readable format
 
         Args:
             cap (str): The capture to clean
+            windows_context_size (str): The size of the context window of the LLM
 
         Returns:
             str: The cleaned capture
@@ -121,7 +129,10 @@ class Dataset:
         table_rows = []
 
         for line in cap_lines:
-            columns = re.split(match_tabs, line.strip())
+            if windows_context_size == "Big":
+                columns = re.split(match_tabs, line.strip())
+            else:
+                columns = re.split(match_tabs, line.strip())[:-1]
 
             if "\u2192" in columns:
                 # Remove it from list

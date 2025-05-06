@@ -96,7 +96,7 @@ class Evaluator:
 
                 try:
                     logger.debug(f"Processing file: {file} with model: {model}")
-                    dataset = Dataset(os.path.join("netexplainer/data/cleaned/", file), QUESTIONS_PATH)
+                    dataset = Dataset(os.path.join("netexplainer/data/cleaned/", file), QUESTIONS_PATH, models[f"{model}"][1])
                     llm = models[f"{model}"][0](dataset.processed_file, tools=tools)
 
                     for question in dataset.questions_subquestions.keys():
