@@ -73,7 +73,7 @@ class Dataset:
         packets = self.__cap_to_str(file_path, windows_context_size)
         txt_file_path = file_path.replace('.pcapng', '.txt').replace('.pcap', '.txt').replace('.cap', '.txt')
         with open(txt_file_path, 'w') as f:
-            if windows_context_size == "Big":
+            if windows_context_size == "big":
                 f.write("No.|Time|Source|Destination|Protocol|Length|Info\n")
             else:
                 f.write("No.|Time|Source|Destination|Protocol|Length\n")
@@ -129,7 +129,7 @@ class Dataset:
         table_rows = []
 
         for line in cap_lines:
-            if windows_context_size == "Big":
+            if windows_context_size == "big":
                 columns = re.split(match_tabs, line.strip())
             else:
                 columns = re.split(match_tabs, line.strip())[:-1]
