@@ -46,7 +46,7 @@ class TestLLMSubclasses(unittest.TestCase):
     def test_gemini_init(self, mock_load_dotenv, mock_isfile, mock_exists, mock_model):
         with patch("netexplainer.llm.TextLoader"), \
              patch("builtins.open", mock_open(read_data="data")):
-            llm = models["gemini-2.0-flash"]("dummy.txt", tools=True)
+            llm = models["gemini-2.0-flash"][0]("dummy.txt", tools=True)
             mock_model.assert_called_once_with(
                 model="gemini-2.0-flash",
                 temperature=0,
@@ -63,7 +63,7 @@ class TestLLMSubclasses(unittest.TestCase):
     def test_llama_init(self, mock_load_dotenv, mock_isfile, mock_exists, mock_model):
         with patch("netexplainer.llm.TextLoader"), \
              patch("builtins.open", mock_open(read_data="data")):
-            llm = models["llama3-8b-8192"]("dummy.txt", tools=True)
+            llm = models["llama3-8b-8192"][0]("dummy.txt", tools=True)
             mock_model.assert_called_once_with(
                 model="llama3-8b-8192",
                 temperature=0,

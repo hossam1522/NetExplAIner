@@ -18,7 +18,7 @@ class TestDataset(unittest.TestCase):
             subquestions: ["Sub1", "Sub2"]
         """
         with patch("builtins.open", mock_open(read_data=self.mock_questions_content)):
-            self.dataset = Dataset("dummy.pcap", "dummy_questions.yaml")
+            self.dataset = Dataset("dummy.pcap", "dummy_questions.yaml", "big")
 
     @patch("netexplainer.dataset.check_output", return_value=b"Mocked Data")
     @patch("os.path.exists", return_value=True)
@@ -27,13 +27,13 @@ class TestDataset(unittest.TestCase):
     def test_init(self, mock_rdpcap, mock_isfile, mock_exists, mock_check_output):
         mock_rdpcap.return_value = MagicMock()
         with patch("builtins.open", mock_open(read_data=self.mock_questions_content)):
-            dataset = Dataset("dummy.pcap", "dummy_questions.yaml")
+            dataset = Dataset("dummy.pcap", "dummy_questions.yaml", "big")
             self.assertEqual(dataset._Dataset__path, os.path.abspath("dummy.pcap"))
 
     @patch("netexplainer.dataset.check_output", return_value=b"Mocked Data")
     @patch("builtins.open", new_callable=mock_open)
     def test_process_file(self, mock_file, mock_check_output):
-        processed_path = self.dataset._Dataset__process_file("dummy.pcap")
+        processed_path = self.dataset._Dataset__process_file("dummy.pcap", "big")
         self.assertTrue(processed_path.endswith(".txt"))
         mock_file.assert_called_once_with(processed_path, 'w')
         handle = mock_file()
@@ -42,7 +42,7 @@ class TestDataset(unittest.TestCase):
 
     def test_clean_cap_format(self):
         mocked_data = "1\t0.0\t192.168.1.1\t192.168.1.2\tTCP\t54\t[SYN]"
-        result = self.dataset._Dataset__clean_cap_format(mocked_data)
+        result = self.dataset._Dataset__clean_cap_format(mocked_data, "big")
         self.assertIn("|", result)
 
     @patch("os.path.isfile")
@@ -53,7 +53,7 @@ class TestDataset(unittest.TestCase):
         mock_isfile.side_effect = lambda x: True if x == "dummy.pcap" else False
         mock_rdpcap.return_value = MagicMock()
         with self.assertRaises(FileNotFoundError):
-            Dataset("dummy.pcap", "missing.yaml")
+            Dataset("dummy.pcap", "missing.yaml", "big")
 
 if __name__ == '__main__':
     unittest.main()
