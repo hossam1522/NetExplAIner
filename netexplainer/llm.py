@@ -370,6 +370,7 @@ class LLM_MISTRAL_7B_Ollama(LLM):
 
         llm = ChatOllama(
             model=self.model,
+            num_ctx=32768,
         )
 
         if not tools:
