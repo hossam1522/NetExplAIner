@@ -58,6 +58,7 @@ class LLM:
             raise TypeError(f'The file {data_path} is not a text file, please provide a txt file')
 
         load_dotenv()
+        self.llm = None
         self.model = None
         loader = TextLoader(data_path)
         self.file = loader.load()
@@ -76,7 +77,7 @@ class LLM:
         Input question: {question}"""
         prompt_decomposition = ChatPromptTemplate.from_template(template)
 
-        generate_queries_decomposition = ( prompt_decomposition | self.model | StrOutputParser() | (lambda x: x.split("\n")))
+        generate_queries_decomposition = ( prompt_decomposition | self.llm | StrOutputParser() | (lambda x: x.split("\n")))
         sub_questions = generate_queries_decomposition.invoke({"question":question})
         logger.debug(f"Model: {self.model}, Question: {question}, Sub-questions generated: {sub_questions}")
         return sub_questions
@@ -100,7 +101,7 @@ class LLM:
 
         chain = (
             prompt
-            | self.model
+            | self.llm
             | StrOutputParser()
         )
 
@@ -138,7 +139,7 @@ class LLM:
         prompt = ChatPromptTemplate.from_template(template)
         chain = (
             prompt
-            | self.model
+            | self.llm
             | StrOutputParser()
         )
         final_answer = chain.invoke({"context": self.format_qa_pairs(subquestions, answers), "question": question})
@@ -159,18 +160,20 @@ class LLM_GEMINI(LLM):
         super().__init__(data_path)
         os.environ["GOOGLE_API_KEY"] = os.getenv("GOOGLE_API_KEY")
 
+        self.model = "gemini-2.0-flash"
+
         llm = ChatGoogleGenerativeAI(
-            model="gemini-2.0-flash",
+            model=self.model,
             temperature=0,
             max_tokens=None,
             timeout=None,
         )
 
         if not tools:
-            self.model = llm
+            self.llm = llm
             logger.debug("Using Gemini 2.0 Flash LLM without tools")
         else:
-            self.model = llm.bind_tools(
+            self.llm = llm.bind_tools(
                 tools=[calculator],
             )
             logger.debug("Using Gemini 2.0 Flash LLM with tools")
@@ -188,16 +191,18 @@ class LLM_QWEN_2_5_32B(LLM):
         super().__init__(data_path)
         os.environ["GROQ_API_KEY"] = os.getenv("GROQ_API_KEY")
 
+        self.model = "qwen-2.5-32b"
+
         llm = ChatGroq(
-            model="qwen-2.5-32b",
+            model=self.model,
             temperature=0,
         )
 
         if not tools:
-            self.model = llm
+            self.llm = llm
             logger.debug("Using Qwen 2.5 32B LLM without tools")
         else:
-            self.model = llm.bind_tools(
+            self.llm = llm.bind_tools(
                 tools=[calculator],
             )
             logger.debug("Using Qwen 2.5 32B LLM with tools")
@@ -205,7 +210,7 @@ class LLM_QWEN_2_5_32B(LLM):
 
 class LLM_LLAMA_3_8B(LLM):
     """
-    Class for Llama 3.3 70B Versatile LLM
+    Class for Llama 3 8B LLM
     """
     def __init__(self, data_path: str, tools: bool = False):
         """
@@ -216,19 +221,21 @@ class LLM_LLAMA_3_8B(LLM):
         super().__init__(data_path)
         os.environ["GROQ_API_KEY"] = os.getenv("GROQ_API_KEY")
 
+        self.model = "llama3-8b-8192"
+
         llm = ChatGroq(
-            model="llama3-8b-8192",
+            model=self.model,
             temperature=0,
         )
 
         if not tools:
-            self.model = llm
-            logger.debug("Using Llama 3.3 70B Versatile LLM without tools")
+            self.llm = llm
+            logger.debug("Using Llama 3 8B LLM without tools")
         else:
-            self.model = llm.bind_tools(
+            self.llm = llm.bind_tools(
                 tools=[calculator],
             )
-            logger.debug("Using Llama 3.3 70B Versatile LLM with tools")
+            logger.debug("Using Llama 3 8B LLM with tools")
 
 class LLM_MISTRAL_SABA_24B(LLM):
     """
@@ -243,16 +250,18 @@ class LLM_MISTRAL_SABA_24B(LLM):
         super().__init__(data_path)
         os.environ["GROQ_API_KEY"] = os.getenv("GROQ_API_KEY")
 
+        self.model = "mistral-saba-24b"
+
         llm = ChatGroq(
-            model="mistral-saba-24b",
+            model=self.model,
             temperature=0,
         )
 
         if not tools:
-            self.model = llm
+            self.llm = llm
             logger.debug("Using Mistral Saba 24B LLM without tools")
         else:
-            self.model = llm.bind_tools(
+            self.llm = llm.bind_tools(
                 tools=[calculator],
             )
             logger.debug("Using Mistral Saba 24B LLM with tools")
@@ -270,18 +279,20 @@ class LLM_GEMMA_3(LLM):
         super().__init__(data_path)
         os.environ["GOOGLE_API_KEY"] = os.getenv("GOOGLE_API_KEY")
 
+        self.model = "gemma-3-27b-it"
+
         llm = ChatGoogleGenerativeAI(
-            model="gemma-3-27b-it",
+            model=self.model,
             temperature=0,
             max_tokens=None,
             timeout=None,
         )
 
         if not tools:
-            self.model = llm
+            self.llm = llm
             logger.debug("Using Gemma 3 LLM without tools")
         else:
-            self.model = llm.bind_tools(
+            self.llm = llm.bind_tools(
                 tools=[calculator],
             )
             logger.debug("Using Gemma 3 LLM with tools")
@@ -299,18 +310,20 @@ class LLM_MISTRAL_7B(LLM):
         super().__init__(data_path)
         os.environ["MISTRAL_API_KEY"] = os.getenv("MISTRAL_API_KEY")
 
+        self.model = "open-mistral-7b"
+
         llm = ChatMistralAI(
             api_key=os.getenv("MISTRAL_API_KEY"),
-            model="open-mistral-7b",
+            model=self.model,
             temperature=0,
             timeout=30,
         )
 
         if not tools:
-            self.model = llm
+            self.llm = llm
             logger.debug("Using Mistral 7B LLM without tools")
         else:
-            self.model = llm.bind_tools(
+            self.llm = llm.bind_tools(
                 tools=[calculator],
             )
             logger.debug("Using Mistral 7B LLM with tools")
@@ -327,15 +340,17 @@ class LLM_LLAMA2_7B(LLM):
         """
         super().__init__(data_path)
 
+        self.model = "llama2"
+
         llm = OllamaLLM(
-            model="llama2",
+            model=self.model,
         )
 
         if not tools:
-            self.model = llm
+            self.llm = llm
             logger.debug("Using Llama 2 7B LLM without tools")
         else:
-            self.model = llm.bind_tools(
+            self.llm = llm.bind_tools(
                 tools=[calculator],
             )
             logger.debug("Using Llama 2 7B LLM with tools")
@@ -352,15 +367,17 @@ class LLM_MISTRAL_7B_Ollama(LLM):
         """
         super().__init__(data_path)
 
+        self.model = "mistral"
+
         llm = OllamaLLM(
-            model="mistral",
+            model=self.model,
         )
 
         if not tools:
-            self.model = llm
+            self.llm = llm
             logger.debug("Using Mistral 7B LLM using Ollama without tools")
         else:
-            self.model = llm.bind_tools(
+            self.llm = llm.bind_tools(
                 tools=[calculator],
             )
             logger.debug("Using Mistral 7B LLM using Ollama with tools")
