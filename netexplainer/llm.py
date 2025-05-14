@@ -210,7 +210,7 @@ class LLM_QWEN_2_5_32B(LLM):
 
 class LLM_LLAMA_3_8B(LLM):
     """
-    Class for Llama 3.3 70B Versatile LLM
+    Class for Llama 3 8B LLM
     """
     def __init__(self, data_path: str, tools: bool = False):
         """
@@ -230,12 +230,12 @@ class LLM_LLAMA_3_8B(LLM):
 
         if not tools:
             self.llm = llm
-            logger.debug("Using Llama 3.3 70B Versatile LLM without tools")
+            logger.debug("Using Llama 3 8B LLM without tools")
         else:
             self.llm = llm.bind_tools(
                 tools=[calculator],
             )
-            logger.debug("Using Llama 3.3 70B Versatile LLM with tools")
+            logger.debug("Using Llama 3 8B LLM with tools")
 
 class LLM_MISTRAL_SABA_24B(LLM):
     """
