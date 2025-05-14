@@ -43,7 +43,7 @@ class Evaluator:
         llm = models["gemma-3-27b"][0](dataset.processed_file)
         chain = (
             prompt
-            | llm.model
+            | llm.llm
             | StrOutputParser()
         )
         answer = chain.invoke({"question": question, "subquestions_LLM": subquestions, "subquestions": dataset.questions_subquestions[question]})
@@ -73,7 +73,7 @@ class Evaluator:
         llm = models["gemma-3-27b"][0](dataset.processed_file)
         chain = (
             prompt
-            | llm.model
+            | llm.llm
             | StrOutputParser()
         )
         answer = chain.invoke({"question": question, "answer_LLM": answer_llm, "answer": dataset.questions_answers[question]})
