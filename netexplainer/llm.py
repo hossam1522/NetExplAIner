@@ -12,7 +12,7 @@ from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_mistralai.chat_models import ChatMistralAI
 from langchain_groq import ChatGroq
 from langchain_core.tools import tool
-from langchain_ollama.llms import OllamaLLM
+from langchain_ollama import ChatOllama
 
 configure_logger(name="llm", filepath=Path(__file__).parent / "data/evaluation/netexplainer.log")
 logger = logging.getLogger("llm")
@@ -342,7 +342,7 @@ class LLM_LLAMA2_7B(LLM):
 
         self.model = "llama2"
 
-        llm = OllamaLLM(
+        llm = ChatOllama(
             model=self.model,
         )
 
@@ -369,7 +369,7 @@ class LLM_MISTRAL_7B_Ollama(LLM):
 
         self.model = "mistral"
 
-        llm = OllamaLLM(
+        llm = ChatOllama(
             model=self.model,
         )
 
