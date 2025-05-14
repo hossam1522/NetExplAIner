@@ -178,9 +178,9 @@ class LLM_GEMINI(LLM):
             )
             logger.debug("Using Gemini 2.0 Flash LLM with tools")
 
-class LLM_QWEN_3_8B(LLM):
+class LLM_QWEN_2_5_7B(LLM):
     """
-    Class for Qwen 3 8B LLM
+    Class for Qwen2.5 7B LLM
     """
     def __init__(self, data_path: str, tools: bool = False):
         """
@@ -189,9 +189,8 @@ class LLM_QWEN_3_8B(LLM):
             data_path (str): The path of the file to process
         """
         super().__init__(data_path)
-        os.environ["GROQ_API_KEY"] = os.getenv("GROQ_API_KEY")
 
-        self.model = "qwen3"
+        self.model = "qwen2.5"
 
         llm = ChatOllama(
             model=self.model,
@@ -200,12 +199,12 @@ class LLM_QWEN_3_8B(LLM):
 
         if not tools:
             self.llm = llm
-            logger.debug("Using Qwen 3 8B LLM without tools")
+            logger.debug("Using Qwen2.5 7B LLM without tools")
         else:
             self.llm = llm.bind_tools(
                 tools=[calculator],
             )
-            logger.debug("Using Qwen 3 8B LLM with tools")
+            logger.debug("Using Qwen2.5 7B LLM with tools")
 
 
 class LLM_LLAMA_3_8B(LLM):
@@ -388,7 +387,7 @@ if windows context size is small or big.
 """
 models = {
     "gemini-2.0-flash": (LLM_GEMINI, "big"),
-    "qwen3-8b": (LLM_QWEN_3_8B, "big"),
+    "qwen2.5-7b": (LLM_QWEN_2_5_7B, "big"),
     "llama3-8b-8192": (LLM_LLAMA_3_8B, "small"),
     "mistral-saba-24b": (LLM_MISTRAL_SABA_24B, "big"),
     "gemma-3-27b": (LLM_GEMMA_3, "big"),
