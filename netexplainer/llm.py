@@ -178,9 +178,9 @@ class LLM_GEMINI(LLM):
             )
             logger.debug("Using Gemini 2.0 Flash LLM with tools")
 
-class LLM_QWEN_2_5_32B(LLM):
+class LLM_QWEN_3_8B(LLM):
     """
-    Class for Qwen 2.5 32B LLM
+    Class for Qwen 3 8B LLM
     """
     def __init__(self, data_path: str, tools: bool = False):
         """
@@ -191,21 +191,20 @@ class LLM_QWEN_2_5_32B(LLM):
         super().__init__(data_path)
         os.environ["GROQ_API_KEY"] = os.getenv("GROQ_API_KEY")
 
-        self.model = "qwen-2.5-32b"
+        self.model = "qwen3"
 
-        llm = ChatGroq(
+        llm = ChatOllama(
             model=self.model,
-            temperature=0,
         )
 
         if not tools:
             self.llm = llm
-            logger.debug("Using Qwen 2.5 32B LLM without tools")
+            logger.debug("Using Qwen 3 8B LLM without tools")
         else:
             self.llm = llm.bind_tools(
                 tools=[calculator],
             )
-            logger.debug("Using Qwen 2.5 32B LLM with tools")
+            logger.debug("Using Qwen 3 8B LLM with tools")
 
 
 class LLM_LLAMA_3_8B(LLM):
@@ -388,7 +387,7 @@ if windows context size is small or big.
 """
 models = {
     "gemini-2.0-flash": (LLM_GEMINI, "big"),
-    "qwen-2.5-32b": (LLM_QWEN_2_5_32B, "big"),
+    "qwen3-8b": (LLM_QWEN_3_8B, "big"),
     "llama3-8b-8192": (LLM_LLAMA_3_8B, "small"),
     "mistral-saba-24b": (LLM_MISTRAL_SABA_24B, "big"),
     "gemma-3-27b": (LLM_GEMMA_3, "big"),

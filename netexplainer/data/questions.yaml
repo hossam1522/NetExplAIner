@@ -1,5 +1,5 @@
 models:
-  - "mistral-7b-ollama"
+  - "qwen3-8b"
 
 questions:
   - question: "What is the total number of packets in the trace?"
