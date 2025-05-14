@@ -88,9 +88,9 @@ class Evaluator:
             models_to_evaluate (list): List of models to evaluate.
             tools (bool): Whether to use tools or not.
         """
-        all_results = []
-
         for model in models_to_evaluate:
+            all_results = []
+
             for file in os.listdir("netexplainer/data/cleaned/"):
                 if file.endswith(".txt"):
                     continue
@@ -154,12 +154,12 @@ class Evaluator:
                 except Exception as e:
                     logger.error(f"Error processing file {file} with model {model}: {e}")
 
-        logger.debug("Generating pie charts")
-        self.generate_pie_charts(all_results, tools)
-        logger.debug("Generating bar charts")
-        self.generate_bar_charts(all_results, tools)
-        logger.debug("Generating model subquestions charts")
-        self.generate_model_subquestions_chart(all_results, tools)
+            logger.debug("Generating pie charts")
+            self.generate_pie_charts(all_results, tools)
+            logger.debug("Generating bar charts")
+            self.generate_bar_charts(all_results, tools)
+            logger.debug("Generating model subquestions charts")
+            self.generate_model_subquestions_chart(all_results, tools)
 
     def generate_model_subquestions_chart(self, results: list, tools: bool = False) -> None:
         """
