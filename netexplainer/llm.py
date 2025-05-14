@@ -195,6 +195,7 @@ class LLM_QWEN_3_8B(LLM):
 
         llm = ChatOllama(
             model=self.model,
+            num_ctx=32768,
         )
 
         if not tools:
