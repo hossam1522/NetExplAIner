@@ -21,7 +21,6 @@ logger = logging.getLogger("llm")
 @tool
 def calculator(expression: str) -> str:
     """Calculate expression using Python's numexpr library.
-    USE ONLY IF NECESSARY.
 
     Expression should be a single line mathematical expression
     that solves the problem.
