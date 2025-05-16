@@ -13,6 +13,7 @@ from langchain_mistralai.chat_models import ChatMistralAI
 from langchain_groq import ChatGroq
 from langchain_core.tools import tool
 from langchain_ollama import ChatOllama
+from langchain_community.llms import VLLM
 
 configure_logger(name="llm", filepath=Path(__file__).parent / "data/evaluation/netexplainer.log")
 logger = logging.getLogger("llm")
@@ -382,6 +383,38 @@ class LLM_MISTRAL_7B_Ollama(LLM):
             )
             logger.debug("Using Mistral 7B LLM using Ollama with tools")
 
+class LLM_MISTRAL_7B_VLLM(LLM):
+    """
+    Class for Mistral 7B LLM using vLLM
+    """
+    def __init__(self, data_path: str, tools: bool = False):
+        """
+        Initialize the LLM object with the file provided
+        Args:
+            data_path (str): The path of the file to process
+        """
+        super().__init__(data_path)
+
+        self.model = "mistralai/Mistral-7B-v0.3"
+
+        llm = VLLM(
+            model=self.model,
+            temperature=0,
+            max_new_tokens=32768,
+            trust_remote_code=True,
+            vllm_kwargs={"quantization": "awq"},
+        )
+
+        if not tools:
+            self.llm = llm
+            logger.debug("Using Mistral 7B LLM using vLLM without tools")
+        else:
+            self.llm = llm.bind_tools(
+                tools=[calculator],
+                tool_choice="any",
+            )
+            logger.debug("Using Mistral 7B LLM using vLLM with tools")
+
 """
 This dictionary maps model names to their respective LLM classes and
 if windows context size is small or big.
@@ -395,4 +428,5 @@ models = {
     "mistral-7b": (LLM_MISTRAL_7B, "big"),
     "llama2-7b": (LLM_LLAMA2_7B, "small"),
     "mistral-7b-ollama": (LLM_MISTRAL_7B_Ollama, "big"),
+    "mistral-7b-vllm": (LLM_MISTRAL_7B_VLLM, "big"),
 }

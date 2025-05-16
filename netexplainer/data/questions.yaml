@@ -1,5 +1,5 @@
 models:
-  - "mistral-7b-ollama"
+  - "mistral-7b-vllm"
 
 questions:
   - question: "What is the total number of packets in the trace?"
