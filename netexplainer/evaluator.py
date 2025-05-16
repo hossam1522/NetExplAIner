@@ -11,6 +11,7 @@ from netexplainer.dataset import Dataset
 from netexplainer.logger import configure_logger
 from langchain_core.output_parsers import StrOutputParser
 from langchain.prompts import ChatPromptTemplate
+from langchain_ollama import ChatOllama
 
 configure_logger(name="evaluator", filepath=Path(__file__).parent / "data/evaluation/netexplainer.log")
 logger = logging.getLogger("evaluator")
@@ -109,22 +110,22 @@ class Evaluator:
 
                                 answers = []
                                 for subquestion in subquestions:
-                                    time.sleep(2.5)
+                                    if not isinstance(llm.llm, ChatOllama): time.sleep(2.5)
                                     answer = llm.answer_subquestion(subquestion)
                                     answers.append(answer)
 
-                                time.sleep(2.5)
+                                if not isinstance(llm.llm, ChatOllama): time.sleep(2.5)
                                 final_answer = llm.get_final_answer(question, subquestions, answers)
 
                                 try:
-                                    time.sleep(2)
+                                    if not isinstance(llm.llm, ChatOllama): time.sleep(2)
                                     subquestions_eval = self.evaluate_subquestions(question, subquestions, dataset)
                                 except Exception as e:
                                     logger.error(f"Error evaluating subquestions: {e}")
                                     subquestions_eval = "ERROR"
 
                                 try:
-                                    time.sleep(2)
+                                    if not isinstance(llm.llm, ChatOllama): time.sleep(2)
                                     answers_eval = self.evaluate_answer(question, final_answer, dataset)
                                 except Exception as e:
                                     logger.error(f"Error evaluating answers: {e}")
