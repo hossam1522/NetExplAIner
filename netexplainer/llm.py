@@ -378,6 +378,7 @@ class LLM_MISTRAL_7B_Ollama(LLM):
         else:
             self.llm = llm.bind_tools(
                 tools=[calculator],
+                tool_choice="any",
             )
             logger.debug("Using Mistral 7B LLM using Ollama with tools")
 
