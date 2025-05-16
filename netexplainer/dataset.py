@@ -210,7 +210,7 @@ class Dataset:
                 if ip_count:
                     max_count = max(ip_count.values())
                     most_common_ips = [ip for ip, count in ip_count.items() if count == max_count]
-                    most_common_ip = "Anyone of: " + " or ".join(most_common_ips) if len(most_common_ips) > 1 else most_common_ips[0]
+                    most_common_ip = " or ".join(most_common_ips) if len(most_common_ips) > 1 else most_common_ips[0]
                 else:
                     most_common_ip = "No IP communications found"
                 questions_answers[question] = most_common_ip
