@@ -78,7 +78,7 @@ class LLM:
         prompt_decomposition = ChatPromptTemplate.from_template(template)
 
         generate_queries_decomposition = ( prompt_decomposition | self.llm | StrOutputParser() | (lambda x: x.split("\n")))
-        sub_questions = generate_queries_decomposition.invoke({"question":question})
+        sub_questions = list(filter(None, generate_queries_decomposition.invoke({"question":question})))
         logger.debug(f"Model: {self.model}, Question: {question}, Sub-questions generated: {sub_questions}")
         return sub_questions
 
