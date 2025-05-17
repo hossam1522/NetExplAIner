@@ -395,14 +395,14 @@ class LLM_MISTRAL_7B_VLLM(LLM):
         """
         super().__init__(data_path)
 
-        self.model = "unsloth/mistral-7b-v0.3-bnb-4bit"
+        self.model = "solidrust/Mistral-7B-v0.3-AWQ"
 
         llm = VLLM(
             model=self.model,
             temperature=0,
             max_new_tokens=32768,
             trust_remote_code=True,
-            #vllm_kwargs={"quantization": "awq"},
+            vllm_kwargs={"quantization": "awq"},
         )
 
         if not tools:
