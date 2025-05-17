@@ -25,6 +25,7 @@ dependencies = [
     "kaleido",
     "langchain-ollama",
     "vllm",
+    "huggingface_hub[cli]",
 ]
 requires-python = ">=3.10"
 readme = "README.md"
