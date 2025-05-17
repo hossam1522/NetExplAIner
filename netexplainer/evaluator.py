@@ -154,6 +154,7 @@ class Evaluator:
                             logger.info(f"Model: {model}, File: {file}, Question: {question}, Subquestions Eval: {subquestions_eval}, Answer Eval: {answers_eval}")
 
                 except Exception as e:
+                    time.sleep(10)
                     logger.error(f"Error processing file {file} with model {model}: {e}")
 
             logger.debug("Generating pie charts")
