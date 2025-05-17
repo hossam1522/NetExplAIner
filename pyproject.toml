@@ -26,6 +26,7 @@ dependencies = [
     "langchain-ollama",
     "vllm",
     "huggingface_hub[cli]",
+    "setuptools",
 ]
 requires-python = ">=3.10"
 readme = "README.md"
