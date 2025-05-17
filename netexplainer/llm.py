@@ -395,7 +395,7 @@ class LLM_MISTRAL_7B_VLLM(LLM):
         """
         super().__init__(data_path)
 
-        self.model = "mistralai/Mistral-7B-v0.3"
+        self.model = "unsloth/mistral-7b-v0.3-bnb-4bit"
 
         llm = VLLM(
             model=self.model,
