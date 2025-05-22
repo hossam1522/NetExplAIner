@@ -49,11 +49,14 @@ class Dataset:
             data = yaml.safe_load(file)
 
         self.questions_subquestions = {}
+        self.divide_in_subquestions = {}
 
         for item in data['questions']:
             question = item['question']
             subquestions = item['subquestions']
+            divide_in_subquestions = item.get('divide_in_subquestions', True)
             self.questions_subquestions[question] = subquestions
+            self.divide_in_subquestions[question] = divide_in_subquestions
 
         self.questions_answers = self.__answer_question(self.__path)
         self.processed_file = self.__process_file(self.__path, windows_context_size)

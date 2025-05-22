@@ -106,20 +106,28 @@ class Evaluator:
                         for _ in range(10):
                             logger.debug(f"Attempting to process question: {question} with model: {model}, attempt: {_ + 1}")
                             try:
-                                subquestions = llm.get_subquestions(question)
+                                if dataset.divide_in_subquestions[question]:
+                                    subquestions = llm.get_subquestions(question)
 
-                                answers = []
-                                for subquestion in subquestions:
+                                    answers = []
+                                    for subquestion in subquestions:
+                                        if not isinstance(llm.llm, ChatOllama): time.sleep(2.5)
+                                        answer = llm.answer_subquestion(subquestion)
+                                        answers.append(answer)
+
                                     if not isinstance(llm.llm, ChatOllama): time.sleep(2.5)
-                                    answer = llm.answer_subquestion(subquestion)
-                                    answers.append(answer)
+                                    final_answer = llm.get_final_answer(question, subquestions, answers)
 
-                                if not isinstance(llm.llm, ChatOllama): time.sleep(2.5)
-                                final_answer = llm.get_final_answer(question, subquestions, answers)
+                                else:
+                                    if not isinstance(llm.llm, ChatOllama): time.sleep(2.5)
+                                    final_answer = llm.answer_subquestion(question)
 
                                 try:
-                                    if not isinstance(llm.llm, ChatOllama): time.sleep(2)
-                                    subquestions_eval = self.evaluate_subquestions(question, subquestions, dataset)
+                                    if dataset.divide_in_subquestions[question]:
+                                        if not isinstance(llm.llm, ChatOllama): time.sleep(2)
+                                        subquestions_eval = self.evaluate_subquestions(question, subquestions, dataset)
+                                    else:
+                                        subquestions_eval = 100
                                 except Exception as e:
                                     logger.error(f"Error evaluating subquestions: {e}")
                                     subquestions_eval = "ERROR"
@@ -138,6 +146,7 @@ class Evaluator:
                                 logger.error(f"Error processing question {question} in file {file}: {e}")
                                 subquestions_eval = "ERROR"
                                 answers_eval = "PROBLEM"
+                                time.sleep(10)
 
                         all_results.append({
                             "model": model,
@@ -154,6 +163,7 @@ class Evaluator:
 
                 except Exception as e:
                     logger.error(f"Error processing file {file} with model {model}: {e}")
+                    time.sleep(10)
 
             logger.debug("Generating pie charts")
             self.generate_pie_charts(all_results, tools)
