@@ -2,6 +2,8 @@ import unittest
 import os
 from unittest.mock import patch, mock_open, MagicMock
 from netexplainer.llm import LLM, models, calculator
+from langchain_core.runnables import Runnable
+from langchain.agents import AgentType
 
 class TestLLM(unittest.TestCase):
     @patch("netexplainer.llm.TextLoader")
@@ -36,39 +38,45 @@ class TestLLM(unittest.TestCase):
         with self.assertRaises(FileExistsError):
             LLM("directory")
 
-
 class TestLLMSubclasses(unittest.TestCase):
+    @patch("netexplainer.llm.initialize_agent")
     @patch("netexplainer.llm.ChatGoogleGenerativeAI")
     @patch("os.path.exists", return_value=True)
     @patch("os.path.isfile", return_value=True)
     @patch("netexplainer.llm.load_dotenv")
     @patch.dict(os.environ, {"GOOGLE_API_KEY": "test"})
-    def test_gemini_init(self, mock_load_dotenv, mock_isfile, mock_exists, mock_model):
+    def test_gemini_init(self, mock_load_dotenv, mock_isfile, mock_exists, mock_model, mock_init_agent):
+        mock_llm_instance = MagicMock(spec=Runnable)
+        mock_model.return_value = mock_llm_instance
+
         with patch("netexplainer.llm.TextLoader"), \
              patch("builtins.open", mock_open(read_data="data")):
             llm = models["gemini-2.0-flash"][0]("dummy.txt", tools=True)
-            mock_model.assert_called_once_with(
-                model="gemini-2.0-flash",
-                temperature=0,
-                max_tokens=None,
-                timeout=None,
-            )
-            mock_model.return_value.bind_tools.assert_called_once_with(tools=[calculator])
 
-    @patch("netexplainer.llm.ChatGroq")
+            mock_init_agent.assert_called_once_with(
+                tools=[calculator],
+                llm=mock_llm_instance,
+                agent_type=AgentType.ZERO_SHOT_REACT_DESCRIPTION,
+            )
+
+    @patch("netexplainer.llm.initialize_agent")
+    @patch("netexplainer.llm.ChatOllama")
     @patch("os.path.exists", return_value=True)
     @patch("os.path.isfile", return_value=True)
     @patch("netexplainer.llm.load_dotenv")
-    @patch.dict(os.environ, {"GROQ_API_KEY": "test"})
-    def test_llama_init(self, mock_load_dotenv, mock_isfile, mock_exists, mock_model):
+    def test_mistral_init(self, mock_load_dotenv, mock_isfile, mock_exists, mock_model, mock_init_agent):
+        mock_llm_instance = MagicMock(spec=Runnable)
+        mock_model.return_value = mock_llm_instance
+
         with patch("netexplainer.llm.TextLoader"), \
              patch("builtins.open", mock_open(read_data="data")):
-            llm = models["llama3-8b-8192"][0]("dummy.txt", tools=True)
-            mock_model.assert_called_once_with(
-                model="llama3-8b-8192",
-                temperature=0,
+            llm = models["mistral-7b"][0]("dummy.txt", tools=True)
+
+            mock_init_agent.assert_called_once_with(
+                tools=[calculator],
+                llm=mock_llm_instance,
+                agent_type=AgentType.ZERO_SHOT_REACT_DESCRIPTION,
             )
-            mock_model.return_value.bind_tools.assert_called_once_with(tools=[calculator])
 
 class TestCalculatorTool(unittest.TestCase):
     def test_calculator_valid(self):
