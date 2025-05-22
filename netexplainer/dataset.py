@@ -49,6 +49,7 @@ class Dataset:
             data = yaml.safe_load(file)
 
         self.questions_subquestions = {}
+        self.divide_in_subquestions = {}
 
         for item in data['questions']:
             question = item['question']
