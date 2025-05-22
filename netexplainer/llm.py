@@ -20,8 +20,8 @@ logger = logging.getLogger("llm")
 
 @tool
 def calculator(expression: str) -> str:
-    """Calculate expression using Python's numexpr library.
-    USE ONLY IF NECESSARY.
+    """USE THIS TOOL TO CALCULATE MATHEMATICAL EXPRESSIONS.
+    Calculate expression using Python's numexpr library.
 
     Expression should be a single line mathematical expression
     that solves the problem.
@@ -92,10 +92,10 @@ class LLM:
         """
         template = """You are a network analyst that answer questions about network traces.
         Use the following network trace to answer the questions.
-        If you don't know the answer, just say that you don't know. Keep the answer as concise as possible.
-        Question: {question}
-        Traces: {traces}
-        Answer:"""
+        DON'T GIVE FUNCTIONS OR CODE, ONLY THE ANSWER.
+        Question: "{question}"
+        Trace:
+        {traces}"""
 
         prompt = ChatPromptTemplate.from_template(template)
 
@@ -178,9 +178,9 @@ class LLM_GEMINI(LLM):
             )
             logger.debug("Using Gemini 2.0 Flash LLM with tools")
 
-class LLM_QWEN_2_5_32B(LLM):
+class LLM_QWEN_2_5_7B(LLM):
     """
-    Class for Qwen 2.5 32B LLM
+    Class for Qwen2.5 7B LLM
     """
     def __init__(self, data_path: str, tools: bool = False):
         """
@@ -189,23 +189,22 @@ class LLM_QWEN_2_5_32B(LLM):
             data_path (str): The path of the file to process
         """
         super().__init__(data_path)
-        os.environ["GROQ_API_KEY"] = os.getenv("GROQ_API_KEY")
 
-        self.model = "qwen-2.5-32b"
+        self.model = "qwen2.5"
 
-        llm = ChatGroq(
+        llm = ChatOllama(
             model=self.model,
-            temperature=0,
+            num_ctx=32768,
         )
 
         if not tools:
             self.llm = llm
-            logger.debug("Using Qwen 2.5 32B LLM without tools")
+            logger.debug("Using Qwen2.5 7B LLM without tools")
         else:
             self.llm = llm.bind_tools(
                 tools=[calculator],
             )
-            logger.debug("Using Qwen 2.5 32B LLM with tools")
+            logger.debug("Using Qwen2.5 7B LLM with tools")
 
 
 class LLM_LLAMA_3_8B(LLM):
@@ -371,6 +370,7 @@ class LLM_MISTRAL_7B_Ollama(LLM):
 
         llm = ChatOllama(
             model=self.model,
+            num_ctx=32768,
         )
 
         if not tools:
@@ -382,17 +382,75 @@ class LLM_MISTRAL_7B_Ollama(LLM):
             )
             logger.debug("Using Mistral 7B LLM using Ollama with tools")
 
+class LLM_LLAMA3_8B(LLM):
+    """
+    Class for Llama3.1 8B LLM
+    """
+    def __init__(self, data_path: str, tools: bool = False):
+        """
+        Initialize the LLM object with the file provided
+        Args:
+            data_path (str): The path of the file to process
+        """
+        super().__init__(data_path)
+
+        self.model = "llama3.1"
+
+        llm = ChatOllama(
+            model=self.model,
+            num_ctx=128000,
+        )
+
+        if not tools:
+            self.llm = llm
+            logger.debug("Using Llama3.1 8B LLM without tools")
+        else:
+            self.llm = llm.bind_tools(
+                tools=[calculator],
+            )
+            logger.debug("Using Llama3.1 8B LLM with tools")
+
+class LLM_GEMMA3_12B_Ollama(LLM):
+    """
+    Class for Gemma3 12B LLM using Ollama
+    """
+    def __init__(self, data_path: str, tools: bool = False):
+        """
+        Initialize the LLM object with the file provided
+        Args:
+            data_path (str): The path of the file to process
+        """
+        super().__init__(data_path)
+
+        self.model = "gemma3:12b"
+
+        llm = ChatOllama(
+            model=self.model,
+            num_ctx=128000,
+        )
+
+        if not tools:
+            self.llm = llm
+            logger.debug("Using Gemma3 12B LLM using Ollama without tools")
+        else:
+            self.llm = llm.bind_tools(
+                tools=[calculator],
+            )
+            logger.debug("Using Gemma3 12B LLM using Ollama with tools")
+
 """
 This dictionary maps model names to their respective LLM classes and
 if windows context size is small or big.
 """
 models = {
     "gemini-2.0-flash": (LLM_GEMINI, "big"),
-    "qwen-2.5-32b": (LLM_QWEN_2_5_32B, "big"),
+    "qwen2.5-7b": (LLM_QWEN_2_5_7B, "big"),
     "llama3-8b-8192": (LLM_LLAMA_3_8B, "small"),
     "mistral-saba-24b": (LLM_MISTRAL_SABA_24B, "big"),
     "gemma-3-27b": (LLM_GEMMA_3, "big"),
     "mistral-7b": (LLM_MISTRAL_7B, "big"),
     "llama2-7b": (LLM_LLAMA2_7B, "small"),
     "mistral-7b-ollama": (LLM_MISTRAL_7B_Ollama, "big"),
+    "llama3.1-8b": (LLM_LLAMA3_8B, "big"),
+    "gemma-3-12b-ollama": (LLM_GEMMA3_12B_Ollama, "big"),
 }
