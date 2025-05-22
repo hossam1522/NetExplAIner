@@ -10,7 +10,7 @@ from langchain_community.document_loaders import TextLoader
 from langchain_core.output_parsers import StrOutputParser
 from langchain.prompts import ChatPromptTemplate
 from langchain_google_genai import ChatGoogleGenerativeAI
-from langchain.agents import initialize_agent, AgentType
+from langchain.agents import initialize_agent, AgentType, AgentExecutor
 from langchain_core.runnables import RunnableLambda
 from langchain_core.tools import tool
 from langchain.tools import Tool
@@ -88,12 +88,19 @@ class LLM:
         Input question: {question}"""
         prompt_decomposition = ChatPromptTemplate.from_template(template)
 
-        generate_queries_decomposition = (
-            prompt_decomposition
-            | self.llm
-            | RunnableLambda(lambda x: x["output"])
-            | StrOutputParser()
-            | (lambda x: x.split("\n")))
+        if isinstance(self.llm, AgentExecutor):
+            generate_queries_decomposition = (
+                prompt_decomposition
+                | self.llm
+                | RunnableLambda(lambda x: x["output"])
+                | StrOutputParser()
+                | (lambda x: x.split("\n")))
+        else:
+            generate_queries_decomposition = (
+                prompt_decomposition
+                | self.llm
+                | StrOutputParser()
+                | (lambda x: x.split("\n")))
 
         sub_questions = list(filter(None, generate_queries_decomposition.invoke({"question":question})))
         logger.debug(f"Model: {self.model}, Question: {question}, Sub-questions generated: {sub_questions}")
@@ -116,12 +123,19 @@ class LLM:
 
         prompt = ChatPromptTemplate.from_template(template)
 
-        chain = (
-            prompt
-            | self.llm
-            | RunnableLambda(lambda x: x["output"])
-            | StrOutputParser()
-        )
+        if isinstance(self.llm, AgentExecutor):
+            chain = (
+                prompt
+                | self.llm
+                | RunnableLambda(lambda x: x["output"])
+                | StrOutputParser()
+            )
+        else:
+            chain = (
+                prompt
+                | self.llm
+                | StrOutputParser()
+            )
 
         answer = chain.invoke({"traces": self.file[0].page_content, "question": question})
         logger.debug(f"Model: {self.model}, Question: {question}, Answer: {answer}")
@@ -155,11 +169,21 @@ class LLM:
         {context}
         Use these to synthesize an answer to the question: {question}"""
         prompt = ChatPromptTemplate.from_template(template)
-        chain = (
-            prompt
-            | self.llm
-            | StrOutputParser()
-        )
+
+        if isinstance(self.llm, AgentExecutor):
+            chain = (
+                prompt
+                | self.llm
+                | RunnableLambda(lambda x: x["output"])
+                | StrOutputParser()
+            )
+        else:
+            chain = (
+                prompt
+                | self.llm
+                | StrOutputParser()
+            )
+
         final_answer = chain.invoke({"context": self.format_qa_pairs(subquestions, answers), "question": question})
         logger.debug(f"Model: {self.model}, Question: {question}, Final answer: {final_answer}")
         return final_answer
