@@ -88,7 +88,13 @@ class LLM:
         Input question: {question}"""
         prompt_decomposition = ChatPromptTemplate.from_template(template)
 
-        generate_queries_decomposition = ( prompt_decomposition | self.llm | StrOutputParser() | (lambda x: x.split("\n")))
+        generate_queries_decomposition = (
+            prompt_decomposition
+            | self.llm
+            | RunnableLambda(lambda x: x["output"])
+            | StrOutputParser()
+            | (lambda x: x.split("\n")))
+
         sub_questions = list(filter(None, generate_queries_decomposition.invoke({"question":question})))
         logger.debug(f"Model: {self.model}, Question: {question}, Sub-questions generated: {sub_questions}")
         return sub_questions
@@ -113,6 +119,7 @@ class LLM:
         chain = (
             prompt
             | self.llm
+            | RunnableLambda(lambda x: x["output"])
             | StrOutputParser()
         )
 
