@@ -138,6 +138,7 @@ class Evaluator:
                                 logger.error(f"Error processing question {question} in file {file}: {e}")
                                 subquestions_eval = "ERROR"
                                 answers_eval = "PROBLEM"
+                                time.sleep(10)
 
                         all_results.append({
                             "model": model,
@@ -154,6 +155,7 @@ class Evaluator:
 
                 except Exception as e:
                     logger.error(f"Error processing file {file} with model {model}: {e}")
+                    time.sleep(10)
 
             logger.debug("Generating pie charts")
             self.generate_pie_charts(all_results, tools)
