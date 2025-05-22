@@ -10,6 +10,8 @@ from langchain_community.document_loaders import TextLoader
 from langchain_core.output_parsers import StrOutputParser
 from langchain.prompts import ChatPromptTemplate
 from langchain_google_genai import ChatGoogleGenerativeAI
+from langchain.agents import initialize_agent, AgentType
+from langchain_core.runnables import RunnableLambda
 from langchain_mistralai.chat_models import ChatMistralAI
 from langchain_groq import ChatGroq
 from langchain_core.tools import tool
@@ -181,11 +183,16 @@ class LLM_GEMINI(LLM):
         )
 
         if not tools:
-            self.llm = llm
+            self.llm = initialize_agent(
+                llm=llm,
+                agent_type=AgentType.ZERO_SHOT_REACT_DESCRIPTION,
+            )
             logger.debug("Using Gemini 2.0 Flash LLM without tools")
         else:
-            self.llm = llm.bind_tools(
+            self.llm = initialize_agent(
                 tools=[calculator],
+                llm=llm,
+                agent_type=AgentType.ZERO_SHOT_REACT_DESCRIPTION,
             )
             logger.debug("Using Gemini 2.0 Flash LLM with tools")
 
@@ -209,72 +216,18 @@ class LLM_QWEN_2_5_7B(LLM):
         )
 
         if not tools:
-            self.llm = llm
+            self.llm = initialize_agent(
+                llm=llm,
+                agent_type=AgentType.ZERO_SHOT_REACT_DESCRIPTION,
+            )
             logger.debug("Using Qwen2.5 7B LLM without tools")
         else:
-            self.llm = llm.bind_tools(
+            self.llm = initialize_agent(
                 tools=[calculator],
+                llm=llm,
+                agent_type=AgentType.ZERO_SHOT_REACT_DESCRIPTION,
             )
             logger.debug("Using Qwen2.5 7B LLM with tools")
-
-
-class LLM_LLAMA_3_8B(LLM):
-    """
-    Class for Llama 3 8B LLM
-    """
-    def __init__(self, data_path: str, tools: bool = False):
-        """
-        Initialize the LLM object with the file provided
-        Args:
-            data_path (str): The path of the file to process
-        """
-        super().__init__(data_path)
-        os.environ["GROQ_API_KEY"] = os.getenv("GROQ_API_KEY")
-
-        self.model = "llama3-8b-8192"
-
-        llm = ChatGroq(
-            model=self.model,
-            temperature=0,
-        )
-
-        if not tools:
-            self.llm = llm
-            logger.debug("Using Llama 3 8B LLM without tools")
-        else:
-            self.llm = llm.bind_tools(
-                tools=[calculator],
-            )
-            logger.debug("Using Llama 3 8B LLM with tools")
-
-class LLM_MISTRAL_SABA_24B(LLM):
-    """
-    Class for Mistral Saba 24B LLM
-    """
-    def __init__(self, data_path: str, tools: bool = False):
-        """
-        Initialize the LLM object with the file provided
-        Args:
-            data_path (str): The path of the file to process
-        """
-        super().__init__(data_path)
-        os.environ["GROQ_API_KEY"] = os.getenv("GROQ_API_KEY")
-
-        self.model = "mistral-saba-24b"
-
-        llm = ChatGroq(
-            model=self.model,
-            temperature=0,
-        )
-
-        if not tools:
-            self.llm = llm
-            logger.debug("Using Mistral Saba 24B LLM without tools")
-        else:
-            self.llm = llm.bind_tools(
-                tools=[calculator],
-            )
-            logger.debug("Using Mistral Saba 24B LLM with tools")
 
 class LLM_GEMMA_3(LLM):
     """
@@ -299,44 +252,18 @@ class LLM_GEMMA_3(LLM):
         )
 
         if not tools:
-            self.llm = llm
+            self.llm = initialize_agent(
+                llm=llm,
+                agent_type=AgentType.ZERO_SHOT_REACT_DESCRIPTION,
+            )
             logger.debug("Using Gemma 3 LLM without tools")
         else:
-            self.llm = llm.bind_tools(
+            self.llm = initialize_agent(
                 tools=[calculator],
+                llm=llm,
+                agent_type=AgentType.ZERO_SHOT_REACT_DESCRIPTION,
             )
             logger.debug("Using Gemma 3 LLM with tools")
-
-class LLM_MISTRAL_7B(LLM):
-    """
-    Class for Mistral 7B LLM
-    """
-    def __init__(self, data_path: str, tools: bool = False):
-        """
-        Initialize the LLM object with the file provided
-        Args:
-            data_path (str): The path of the file to process
-        """
-        super().__init__(data_path)
-        os.environ["MISTRAL_API_KEY"] = os.getenv("MISTRAL_API_KEY")
-
-        self.model = "open-mistral-7b"
-
-        llm = ChatMistralAI(
-            api_key=os.getenv("MISTRAL_API_KEY"),
-            model=self.model,
-            temperature=0,
-            timeout=30,
-        )
-
-        if not tools:
-            self.llm = llm
-            logger.debug("Using Mistral 7B LLM without tools")
-        else:
-            self.llm = llm.bind_tools(
-                tools=[calculator],
-            )
-            logger.debug("Using Mistral 7B LLM with tools")
 
 class LLM_LLAMA2_7B(LLM):
     """
@@ -357,15 +284,20 @@ class LLM_LLAMA2_7B(LLM):
         )
 
         if not tools:
-            self.llm = llm
+            self.llm = initialize_agent(
+                llm=llm,
+                agent_type=AgentType.ZERO_SHOT_REACT_DESCRIPTION,
+            )
             logger.debug("Using Llama 2 7B LLM without tools")
         else:
-            self.llm = llm.bind_tools(
+            self.llm = initialize_agent(
                 tools=[calculator],
+                llm=llm,
+                agent_type=AgentType.ZERO_SHOT_REACT_DESCRIPTION,
             )
             logger.debug("Using Llama 2 7B LLM with tools")
 
-class LLM_MISTRAL_7B_Ollama(LLM):
+class LLM_MISTRAL_7B(LLM):
     """
     Class for Mistral 7B LLM using Ollama
     """
@@ -385,11 +317,16 @@ class LLM_MISTRAL_7B_Ollama(LLM):
         )
 
         if not tools:
-            self.llm = llm
+            self.llm = initialize_agent(
+                llm=llm,
+                agent_type=AgentType.ZERO_SHOT_REACT_DESCRIPTION,
+            )
             logger.debug("Using Mistral 7B LLM using Ollama without tools")
         else:
-            self.llm = llm.bind_tools(
+            self.llm = initialize_agent(
                 tools=[calculator],
+                llm=llm,
+                agent_type=AgentType.ZERO_SHOT_REACT_DESCRIPTION,
             )
             logger.debug("Using Mistral 7B LLM using Ollama with tools")
 
@@ -413,11 +350,16 @@ class LLM_LLAMA3_8B(LLM):
         )
 
         if not tools:
-            self.llm = llm
+            self.llm = initialize_agent(
+                llm=llm,
+                agent_type=AgentType.ZERO_SHOT_REACT_DESCRIPTION,
+            )
             logger.debug("Using Llama3.1 8B LLM without tools")
         else:
-            self.llm = llm.bind_tools(
+            self.llm = initialize_agent(
                 tools=[calculator],
+                llm=llm,
+                agent_type=AgentType.ZERO_SHOT_REACT_DESCRIPTION,
             )
             logger.debug("Using Llama3.1 8B LLM with tools")
 
@@ -441,11 +383,16 @@ class LLM_GEMMA3_12B_Ollama(LLM):
         )
 
         if not tools:
-            self.llm = llm
+            self.llm = initialize_agent(
+                llm=llm,
+                agent_type=AgentType.ZERO_SHOT_REACT_DESCRIPTION,
+            )
             logger.debug("Using Gemma3 12B LLM using Ollama without tools")
         else:
-            self.llm = llm.bind_tools(
+            self.llm = initialize_agent(
                 tools=[calculator],
+                llm=llm,
+                agent_type=AgentType.ZERO_SHOT_REACT_DESCRIPTION,
             )
             logger.debug("Using Gemma3 12B LLM using Ollama with tools")
 
@@ -456,12 +403,9 @@ if windows context size is small or big.
 models = {
     "gemini-2.0-flash": (LLM_GEMINI, "big"),
     "qwen2.5-7b": (LLM_QWEN_2_5_7B, "big"),
-    "llama3-8b-8192": (LLM_LLAMA_3_8B, "small"),
-    "mistral-saba-24b": (LLM_MISTRAL_SABA_24B, "big"),
     "gemma-3-27b": (LLM_GEMMA_3, "big"),
-    "mistral-7b": (LLM_MISTRAL_7B, "big"),
     "llama2-7b": (LLM_LLAMA2_7B, "small"),
-    "mistral-7b-ollama": (LLM_MISTRAL_7B_Ollama, "big"),
+    "mistral-7b": (LLM_MISTRAL_7B, "big"),
     "llama3.1-8b": (LLM_LLAMA3_8B, "big"),
     "gemma-3-12b-ollama": (LLM_GEMMA3_12B_Ollama, "big"),
 }
