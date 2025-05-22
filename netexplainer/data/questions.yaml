@@ -4,49 +4,58 @@ models:
 
 questions:
   - question: "What is the total number of packets in the trace?"
+    divide_in_subquestions: False
     subquestions:
       - "What is the first packet number?"
       - "What is the last packet number?"
 
   - question: "How many unique communicators are present in the trace?"
+    divide_in_subquestions: False
     subquestions:
       - "How many unique source IPs are there?"
       - "How many unique destination IPs are there?"
       - "Are there any IPs that are both source and destination?"
 
   - question: "What is the IP that participates the most in communications in the trace?"
+    divide_in_subquestions: True
     subquestions:
       - "How many times does each source IP appear?"
       - "How many times does each destination IP appear?"
       - "How many times does each IP appear in both source and destination?"
 
   - question: "What is the total size of transmitted bytes?"
+    divide_in_subquestions: False
     subquestions:
       - "How many packets are in the trace?"
       - "What is the size of each packet in bytes?"
 
   - question: "What is the average size of packets in bytes?"
+    divide_in_subquestions: True
     subquestions:
       - "What is the total number of packets?"
       - "What is the total size of transmitted bytes?"
 
   - question: "What predominates in the capture: ICMP, TCP, or UDP?"
+    divide_in_subquestions: True
     subquestions:
       - "How many packets are with protocol = TCP?"
       - "How many packets are with protocol = UDP?"
       - "How many packets are with protocol = ICMP?"
 
   - question: "How long in seconds does the communication last?"
+    divide_in_subquestions: True
     subquestions:
       - "What is the timestamp of the first packet?"
       - "What is the timestamp of the last packet?"
 
   - question: "What is the average number of packets sent per second?"
+    divide_in_subquestions: True
     subquestions:
       - "How many packets are in the trace?"
       - "What is the total duration in seconds?"
 
   - question: "What is the average bytes/s sent in the communication?"
+    divide_in_subquestions: True
     subquestions:
       - "How much data is sent in bytes in the trace?"
       - "What is the total duration in seconds?"
