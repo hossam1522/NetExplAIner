@@ -2,6 +2,7 @@ import os
 import math
 import numexpr
 import logging
+import warnings
 from pathlib import Path
 from dotenv import load_dotenv
 from netexplainer.logger import configure_logger
@@ -12,16 +13,17 @@ from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_mistralai.chat_models import ChatMistralAI
 from langchain_groq import ChatGroq
 from langchain_core.tools import tool
+from langchain.tools import Tool
 from langchain_ollama import ChatOllama
 
+warnings.filterwarnings("ignore", category=DeprecationWarning)
 configure_logger(name="llm", filepath=Path(__file__).parent / "data/evaluation/netexplainer.log")
 logger = logging.getLogger("llm")
 
 
 @tool
 def calculator(expression: str) -> str:
-    """USE THIS TOOL TO CALCULATE MATHEMATICAL EXPRESSIONS.
-    Calculate expression using Python's numexpr library.
+    """Calculate expression using Python's numexpr library.
 
     Expression should be a single line mathematical expression
     that solves the problem.
@@ -39,6 +41,15 @@ def calculator(expression: str) -> str:
             local_dict=local_dict,  # add common mathematical functions
         )
     )
+
+Tool(
+    name="calculator",
+    func=calculator,
+    description="Use this tool to calculate mathematical expressions. "
+                "The expression should be a single line mathematical expression "
+                "that solves the problem. Examples: '37593 * 67' for '37593 times 67', "
+                "'37593**(1/5)' for '37593^(1/5)'",
+)
 
 class LLM:
     def __init__(self, data_path: str):
