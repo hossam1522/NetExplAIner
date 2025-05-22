@@ -188,10 +188,7 @@ class LLM_GEMINI(LLM):
         )
 
         if not tools:
-            self.llm = initialize_agent(
-                llm=llm,
-                agent_type=AgentType.ZERO_SHOT_REACT_DESCRIPTION,
-            )
+            self.llm = llm
             logger.debug("Using Gemini 2.0 Flash LLM without tools")
         else:
             self.llm = initialize_agent(
@@ -221,10 +218,7 @@ class LLM_QWEN_2_5_7B(LLM):
         )
 
         if not tools:
-            self.llm = initialize_agent(
-                llm=llm,
-                agent_type=AgentType.ZERO_SHOT_REACT_DESCRIPTION,
-            )
+            self.llm = llm
             logger.debug("Using Qwen2.5 7B LLM without tools")
         else:
             self.llm = initialize_agent(
@@ -257,10 +251,7 @@ class LLM_GEMMA_3(LLM):
         )
 
         if not tools:
-            self.llm = initialize_agent(
-                llm=llm,
-                agent_type=AgentType.ZERO_SHOT_REACT_DESCRIPTION,
-            )
+            self.llm = llm
             logger.debug("Using Gemma 3 LLM without tools")
         else:
             self.llm = initialize_agent(
@@ -289,10 +280,7 @@ class LLM_LLAMA2_7B(LLM):
         )
 
         if not tools:
-            self.llm = initialize_agent(
-                llm=llm,
-                agent_type=AgentType.ZERO_SHOT_REACT_DESCRIPTION,
-            )
+            self.llm = llm
             logger.debug("Using Llama 2 7B LLM without tools")
         else:
             self.llm = initialize_agent(
@@ -322,10 +310,7 @@ class LLM_MISTRAL_7B(LLM):
         )
 
         if not tools:
-            self.llm = initialize_agent(
-                llm=llm,
-                agent_type=AgentType.ZERO_SHOT_REACT_DESCRIPTION,
-            )
+            self.llm = llm
             logger.debug("Using Mistral 7B LLM using Ollama without tools")
         else:
             self.llm = initialize_agent(
@@ -355,10 +340,7 @@ class LLM_LLAMA3_8B(LLM):
         )
 
         if not tools:
-            self.llm = initialize_agent(
-                llm=llm,
-                agent_type=AgentType.ZERO_SHOT_REACT_DESCRIPTION,
-            )
+            self.llm = llm
             logger.debug("Using Llama3.1 8B LLM without tools")
         else:
             self.llm = initialize_agent(
@@ -388,10 +370,7 @@ class LLM_GEMMA3_12B_Ollama(LLM):
         )
 
         if not tools:
-            self.llm = initialize_agent(
-                llm=llm,
-                agent_type=AgentType.ZERO_SHOT_REACT_DESCRIPTION,
-            )
+            self.llm = llm
             logger.debug("Using Gemma3 12B LLM using Ollama without tools")
         else:
             self.llm = initialize_agent(

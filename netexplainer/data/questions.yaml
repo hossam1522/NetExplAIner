@@ -1,6 +1,7 @@
 models:
-  - "llama2-7b"
-  - "mistral-7b-ollama"
+  - "gemini-2.0-flash"
+  #- "llama2-7b"
+  #- "mistral-7b-ollama"
 
 questions:
   - question: "What is the total number of packets in the trace?"
