@@ -2,6 +2,7 @@ import os
 import math
 import numexpr
 import logging
+import warnings
 from pathlib import Path
 from dotenv import load_dotenv
 from netexplainer.logger import configure_logger
@@ -9,19 +10,20 @@ from langchain_community.document_loaders import TextLoader
 from langchain_core.output_parsers import StrOutputParser
 from langchain.prompts import ChatPromptTemplate
 from langchain_google_genai import ChatGoogleGenerativeAI
-from langchain_mistralai.chat_models import ChatMistralAI
-from langchain_groq import ChatGroq
+from langchain.agents import initialize_agent, AgentType, AgentExecutor
+from langchain_core.runnables import RunnableLambda
 from langchain_core.tools import tool
+from langchain.tools import Tool
 from langchain_ollama import ChatOllama
 
+warnings.filterwarnings("ignore", category=DeprecationWarning)
 configure_logger(name="llm", filepath=Path(__file__).parent / "data/evaluation/netexplainer.log")
 logger = logging.getLogger("llm")
 
 
 @tool
 def calculator(expression: str) -> str:
-    """USE THIS TOOL TO CALCULATE MATHEMATICAL EXPRESSIONS.
-    Calculate expression using Python's numexpr library.
+    """Calculate expression using Python's numexpr library.
 
     Expression should be a single line mathematical expression
     that solves the problem.
@@ -39,6 +41,15 @@ def calculator(expression: str) -> str:
             local_dict=local_dict,  # add common mathematical functions
         )
     )
+
+Tool(
+    name="calculator",
+    func=calculator,
+    description="Use this tool to calculate mathematical expressions. "
+                "The expression should be a single line mathematical expression "
+                "that solves the problem. Examples: '37593 * 67' for '37593 times 67', "
+                "'37593**(1/5)' for '37593^(1/5)'",
+)
 
 class LLM:
     def __init__(self, data_path: str):
@@ -77,7 +88,20 @@ class LLM:
         Input question: {question}"""
         prompt_decomposition = ChatPromptTemplate.from_template(template)
 
-        generate_queries_decomposition = ( prompt_decomposition | self.llm | StrOutputParser() | (lambda x: x.split("\n")))
+        if isinstance(self.llm, AgentExecutor):
+            generate_queries_decomposition = (
+                prompt_decomposition
+                | self.llm
+                | RunnableLambda(lambda x: x["output"])
+                | StrOutputParser()
+                | (lambda x: x.split("\n")))
+        else:
+            generate_queries_decomposition = (
+                prompt_decomposition
+                | self.llm
+                | StrOutputParser()
+                | (lambda x: x.split("\n")))
+
         sub_questions = list(filter(None, generate_queries_decomposition.invoke({"question":question})))
         logger.debug(f"Model: {self.model}, Question: {question}, Sub-questions generated: {sub_questions}")
         return sub_questions
@@ -99,11 +123,19 @@ class LLM:
 
         prompt = ChatPromptTemplate.from_template(template)
 
-        chain = (
-            prompt
-            | self.llm
-            | StrOutputParser()
-        )
+        if isinstance(self.llm, AgentExecutor):
+            chain = (
+                prompt
+                | self.llm
+                | RunnableLambda(lambda x: x["output"])
+                | StrOutputParser()
+            )
+        else:
+            chain = (
+                prompt
+                | self.llm
+                | StrOutputParser()
+            )
 
         answer = chain.invoke({"traces": self.file[0].page_content, "question": question})
         logger.debug(f"Model: {self.model}, Question: {question}, Answer: {answer}")
@@ -137,11 +169,21 @@ class LLM:
         {context}
         Use these to synthesize an answer to the question: {question}"""
         prompt = ChatPromptTemplate.from_template(template)
-        chain = (
-            prompt
-            | self.llm
-            | StrOutputParser()
-        )
+
+        if isinstance(self.llm, AgentExecutor):
+            chain = (
+                prompt
+                | self.llm
+                | RunnableLambda(lambda x: x["output"])
+                | StrOutputParser()
+            )
+        else:
+            chain = (
+                prompt
+                | self.llm
+                | StrOutputParser()
+            )
+
         final_answer = chain.invoke({"context": self.format_qa_pairs(subquestions, answers), "question": question})
         logger.debug(f"Model: {self.model}, Question: {question}, Final answer: {final_answer}")
         return final_answer
@@ -173,8 +215,10 @@ class LLM_GEMINI(LLM):
             self.llm = llm
             logger.debug("Using Gemini 2.0 Flash LLM without tools")
         else:
-            self.llm = llm.bind_tools(
+            self.llm = initialize_agent(
                 tools=[calculator],
+                llm=llm,
+                agent_type=AgentType.ZERO_SHOT_REACT_DESCRIPTION,
             )
             logger.debug("Using Gemini 2.0 Flash LLM with tools")
 
@@ -201,69 +245,12 @@ class LLM_QWEN_2_5_7B(LLM):
             self.llm = llm
             logger.debug("Using Qwen2.5 7B LLM without tools")
         else:
-            self.llm = llm.bind_tools(
+            self.llm = initialize_agent(
                 tools=[calculator],
+                llm=llm,
+                agent_type=AgentType.ZERO_SHOT_REACT_DESCRIPTION,
             )
             logger.debug("Using Qwen2.5 7B LLM with tools")
-
-
-class LLM_LLAMA_3_8B(LLM):
-    """
-    Class for Llama 3 8B LLM
-    """
-    def __init__(self, data_path: str, tools: bool = False):
-        """
-        Initialize the LLM object with the file provided
-        Args:
-            data_path (str): The path of the file to process
-        """
-        super().__init__(data_path)
-        os.environ["GROQ_API_KEY"] = os.getenv("GROQ_API_KEY")
-
-        self.model = "llama3-8b-8192"
-
-        llm = ChatGroq(
-            model=self.model,
-            temperature=0,
-        )
-
-        if not tools:
-            self.llm = llm
-            logger.debug("Using Llama 3 8B LLM without tools")
-        else:
-            self.llm = llm.bind_tools(
-                tools=[calculator],
-            )
-            logger.debug("Using Llama 3 8B LLM with tools")
-
-class LLM_MISTRAL_SABA_24B(LLM):
-    """
-    Class for Mistral Saba 24B LLM
-    """
-    def __init__(self, data_path: str, tools: bool = False):
-        """
-        Initialize the LLM object with the file provided
-        Args:
-            data_path (str): The path of the file to process
-        """
-        super().__init__(data_path)
-        os.environ["GROQ_API_KEY"] = os.getenv("GROQ_API_KEY")
-
-        self.model = "mistral-saba-24b"
-
-        llm = ChatGroq(
-            model=self.model,
-            temperature=0,
-        )
-
-        if not tools:
-            self.llm = llm
-            logger.debug("Using Mistral Saba 24B LLM without tools")
-        else:
-            self.llm = llm.bind_tools(
-                tools=[calculator],
-            )
-            logger.debug("Using Mistral Saba 24B LLM with tools")
 
 class LLM_GEMMA_3(LLM):
     """
@@ -291,41 +278,12 @@ class LLM_GEMMA_3(LLM):
             self.llm = llm
             logger.debug("Using Gemma 3 LLM without tools")
         else:
-            self.llm = llm.bind_tools(
+            self.llm = initialize_agent(
                 tools=[calculator],
+                llm=llm,
+                agent_type=AgentType.ZERO_SHOT_REACT_DESCRIPTION,
             )
             logger.debug("Using Gemma 3 LLM with tools")
-
-class LLM_MISTRAL_7B(LLM):
-    """
-    Class for Mistral 7B LLM
-    """
-    def __init__(self, data_path: str, tools: bool = False):
-        """
-        Initialize the LLM object with the file provided
-        Args:
-            data_path (str): The path of the file to process
-        """
-        super().__init__(data_path)
-        os.environ["MISTRAL_API_KEY"] = os.getenv("MISTRAL_API_KEY")
-
-        self.model = "open-mistral-7b"
-
-        llm = ChatMistralAI(
-            api_key=os.getenv("MISTRAL_API_KEY"),
-            model=self.model,
-            temperature=0,
-            timeout=30,
-        )
-
-        if not tools:
-            self.llm = llm
-            logger.debug("Using Mistral 7B LLM without tools")
-        else:
-            self.llm = llm.bind_tools(
-                tools=[calculator],
-            )
-            logger.debug("Using Mistral 7B LLM with tools")
 
 class LLM_LLAMA2_7B(LLM):
     """
@@ -349,12 +307,14 @@ class LLM_LLAMA2_7B(LLM):
             self.llm = llm
             logger.debug("Using Llama 2 7B LLM without tools")
         else:
-            self.llm = llm.bind_tools(
+            self.llm = initialize_agent(
                 tools=[calculator],
+                llm=llm,
+                agent_type=AgentType.ZERO_SHOT_REACT_DESCRIPTION,
             )
             logger.debug("Using Llama 2 7B LLM with tools")
 
-class LLM_MISTRAL_7B_Ollama(LLM):
+class LLM_MISTRAL_7B(LLM):
     """
     Class for Mistral 7B LLM using Ollama
     """
@@ -377,8 +337,10 @@ class LLM_MISTRAL_7B_Ollama(LLM):
             self.llm = llm
             logger.debug("Using Mistral 7B LLM using Ollama without tools")
         else:
-            self.llm = llm.bind_tools(
+            self.llm = initialize_agent(
                 tools=[calculator],
+                llm=llm,
+                agent_type=AgentType.ZERO_SHOT_REACT_DESCRIPTION,
             )
             logger.debug("Using Mistral 7B LLM using Ollama with tools")
 
@@ -405,8 +367,10 @@ class LLM_LLAMA3_8B(LLM):
             self.llm = llm
             logger.debug("Using Llama3.1 8B LLM without tools")
         else:
-            self.llm = llm.bind_tools(
+            self.llm = initialize_agent(
                 tools=[calculator],
+                llm=llm,
+                agent_type=AgentType.ZERO_SHOT_REACT_DESCRIPTION,
             )
             logger.debug("Using Llama3.1 8B LLM with tools")
 
@@ -433,8 +397,10 @@ class LLM_GEMMA3_12B_Ollama(LLM):
             self.llm = llm
             logger.debug("Using Gemma3 12B LLM using Ollama without tools")
         else:
-            self.llm = llm.bind_tools(
+            self.llm = initialize_agent(
                 tools=[calculator],
+                llm=llm,
+                agent_type=AgentType.ZERO_SHOT_REACT_DESCRIPTION,
             )
             logger.debug("Using Gemma3 12B LLM using Ollama with tools")
 
@@ -445,12 +411,9 @@ if windows context size is small or big.
 models = {
     "gemini-2.0-flash": (LLM_GEMINI, "big"),
     "qwen2.5-7b": (LLM_QWEN_2_5_7B, "big"),
-    "llama3-8b-8192": (LLM_LLAMA_3_8B, "small"),
-    "mistral-saba-24b": (LLM_MISTRAL_SABA_24B, "big"),
     "gemma-3-27b": (LLM_GEMMA_3, "big"),
-    "mistral-7b": (LLM_MISTRAL_7B, "big"),
     "llama2-7b": (LLM_LLAMA2_7B, "small"),
-    "mistral-7b-ollama": (LLM_MISTRAL_7B_Ollama, "big"),
+    "mistral-7b": (LLM_MISTRAL_7B, "big"),
     "llama3.1-8b": (LLM_LLAMA3_8B, "big"),
     "gemma-3-12b-ollama": (LLM_GEMMA3_12B_Ollama, "big"),
 }

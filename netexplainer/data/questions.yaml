@@ -1,6 +1,6 @@
 models:
   - "llama2-7b"
-  - "mistral-7b-ollama"
+  - "mistral-7b"
 
 questions:
   - question: "What is the total number of packets in the trace?"

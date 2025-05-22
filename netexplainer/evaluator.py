@@ -10,7 +10,9 @@ from netexplainer.llm import models
 from netexplainer.dataset import Dataset
 from netexplainer.logger import configure_logger
 from langchain_core.output_parsers import StrOutputParser
+from langchain_core.runnables import RunnableLambda
 from langchain.prompts import ChatPromptTemplate
+from langchain.agents import AgentExecutor
 from langchain_ollama import ChatOllama
 
 configure_logger(name="evaluator", filepath=Path(__file__).parent / "data/evaluation/netexplainer.log")
@@ -42,11 +44,21 @@ class Evaluator:
         You ONLY can answer with a number, indicating the percentage of similarity."""
         prompt = ChatPromptTemplate.from_template(template)
         llm = models["gemma-3-27b"][0](dataset.processed_file)
-        chain = (
-            prompt
-            | llm.llm
-            | StrOutputParser()
-        )
+
+        if isinstance(llm.llm, AgentExecutor):
+            chain = (
+                prompt
+                | llm.llm
+                | RunnableLambda(lambda x: x["output"])
+                | StrOutputParser()
+            )
+        else:
+            chain = (
+                prompt
+                | llm.llm
+                | StrOutputParser()
+            )
+
         answer = chain.invoke({"question": question, "subquestions_LLM": subquestions, "subquestions": dataset.questions_subquestions[question]})
         logger.debug(f"Question: {question}, Subquestions LLM: {subquestions}, Subquestions: {dataset.questions_subquestions[question]}, Similarity: {answer}")
         return answer
@@ -72,11 +84,21 @@ class Evaluator:
         You ONLY can answer YES/NO"""
         prompt = ChatPromptTemplate.from_template(template)
         llm = models["gemma-3-27b"][0](dataset.processed_file)
-        chain = (
-            prompt
-            | llm.llm
-            | StrOutputParser()
-        )
+
+        if isinstance(llm.llm, AgentExecutor):
+            chain = (
+                prompt
+                | llm.llm
+                | RunnableLambda(lambda x: x["output"])
+                | StrOutputParser()
+            )
+        else:
+            chain = (
+                prompt
+                | llm.llm
+                | StrOutputParser()
+            )
+
         answer = chain.invoke({"question": question, "answer_LLM": answer_llm, "answer": dataset.questions_answers[question]})
         logger.debug(f"Question: {question}, Answer LLM: {answer_llm}, Answer: {dataset.questions_answers[question]}, Comparison: {answer}")
         return answer
