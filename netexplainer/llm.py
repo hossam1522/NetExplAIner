@@ -62,18 +62,23 @@ class LLM:
         load_dotenv()
         self.llm = None
         self.model = None
+        self.tools = False
         loader = TextLoader(data_path)
         self.file = loader.load()
 
-    def call_llm(self, messages: list[BaseMessage]) -> str:
+    def call_llm(self, messages: list[BaseMessage], tools: bool = False) -> str:
         """
         Call the LLM with the provided messages and return the response.
         Args:
             messages (list[BaseMessage]): The list of messages to process
+            tools (bool): Whether to use tools or not
         Returns:
             str: The response from the LLM
         """
-        response = self.llm_with_tools.invoke(messages)
+        if tools:
+            response = self.llm_with_tools.invoke(messages)
+        else:
+            response = self.llm.invoke(messages)
 
         if response.tool_calls:
             tool_responses = []
@@ -225,6 +230,7 @@ class LLM_GEMINI(LLM):
         os.environ["GOOGLE_API_KEY"] = os.getenv("GOOGLE_API_KEY")
 
         self.model = "gemini-2.0-flash"
+        self.tools = tools
 
         llm = ChatGoogleGenerativeAI(
             model=self.model,
@@ -255,6 +261,7 @@ class LLM_QWEN_2_5_7B(LLM):
         super().__init__(data_path)
 
         self.model = "qwen2.5"
+        self.tools = tools
 
         llm = ChatOllama(
             model=self.model,
@@ -284,6 +291,7 @@ class LLM_GEMMA_3(LLM):
         os.environ["GOOGLE_API_KEY"] = os.getenv("GOOGLE_API_KEY")
 
         self.model = "gemma-3-27b-it"
+        self.tools = tools
 
         llm = ChatGoogleGenerativeAI(
             model=self.model,
@@ -314,6 +322,7 @@ class LLM_LLAMA2_7B(LLM):
         super().__init__(data_path)
 
         self.model = "llama2"
+        self.tools = tools
 
         llm = ChatOllama(
             model=self.model,
@@ -341,6 +350,7 @@ class LLM_MISTRAL_7B(LLM):
         super().__init__(data_path)
 
         self.model = "mistral"
+        self.tools = tools
 
         llm = ChatOllama(
             model=self.model,
@@ -369,6 +379,7 @@ class LLM_LLAMA3_8B(LLM):
         super().__init__(data_path)
 
         self.model = "llama3.1"
+        self.tools = tools
 
         llm = ChatOllama(
             model=self.model,
@@ -397,6 +408,7 @@ class LLM_GEMMA3_12B_Ollama(LLM):
         super().__init__(data_path)
 
         self.model = "gemma3:12b"
+        self.tools = tools
 
         llm = ChatOllama(
             model=self.model,
