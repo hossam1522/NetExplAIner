@@ -42,15 +42,6 @@ def calculator(expression: str) -> str:
         )
     )
 
-Tool(
-    name="calculator",
-    func=calculator,
-    description="Use this tool to calculate mathematical expressions. "
-                "The expression should be a single line mathematical expression "
-                "that solves the problem. Examples: '37593 * 67' for '37593 times 67', "
-                "'37593**(1/5)' for '37593^(1/5)'",
-)
-
 class LLM:
     def __init__(self, data_path: str):
         """
