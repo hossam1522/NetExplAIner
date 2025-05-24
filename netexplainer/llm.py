@@ -233,16 +233,14 @@ class LLM_GEMINI(LLM):
             timeout=None,
         )
 
-        if not tools:
-            self.llm = llm
-            logger.debug("Using Gemini 2.0 Flash LLM without tools")
-        else:
-            self.llm = initialize_agent(
-                tools=[calculator],
-                llm=llm,
-                agent_type=AgentType.ZERO_SHOT_REACT_DESCRIPTION,
+        self.llm = llm
+        if tools:
+            self.llm_with_tools = llm.bind_tools(
+                tools=[calculator]
             )
             logger.debug("Using Gemini 2.0 Flash LLM with tools")
+        else:
+            logger.debug("Using Gemini 2.0 Flash LLM without tools")
 
 class LLM_QWEN_2_5_7B(LLM):
     """
@@ -263,16 +261,14 @@ class LLM_QWEN_2_5_7B(LLM):
             num_ctx=32768,
         )
 
-        if not tools:
-            self.llm = llm
-            logger.debug("Using Qwen2.5 7B LLM without tools")
-        else:
-            self.llm = initialize_agent(
-                tools=[calculator],
-                llm=llm,
-                agent_type=AgentType.ZERO_SHOT_REACT_DESCRIPTION,
+        self.llm = llm
+        if tools:
+            self.llm_with_tools = llm.bind_tools(
+                tools=[calculator]
             )
             logger.debug("Using Qwen2.5 7B LLM with tools")
+        else:
+            logger.debug("Using Qwen2.5 7B LLM without tools")
 
 class LLM_GEMMA_3(LLM):
     """
@@ -296,16 +292,14 @@ class LLM_GEMMA_3(LLM):
             timeout=None,
         )
 
-        if not tools:
-            self.llm = llm
-            logger.debug("Using Gemma 3 LLM without tools")
-        else:
-            self.llm = initialize_agent(
-                tools=[calculator],
-                llm=llm,
-                agent_type=AgentType.ZERO_SHOT_REACT_DESCRIPTION,
+        self.llm = llm
+        if tools:
+            self.llm_with_tools = llm.bind_tools(
+                tools=[calculator]
             )
             logger.debug("Using Gemma 3 LLM with tools")
+        else:
+            logger.debug("Using Gemma 3 LLM without tools")
 
 class LLM_LLAMA2_7B(LLM):
     """
@@ -325,16 +319,14 @@ class LLM_LLAMA2_7B(LLM):
             model=self.model,
         )
 
-        if not tools:
-            self.llm = llm
-            logger.debug("Using Llama 2 7B LLM without tools")
-        else:
-            self.llm = initialize_agent(
-                tools=[calculator],
-                llm=llm,
-                agent_type=AgentType.ZERO_SHOT_REACT_DESCRIPTION,
+        self.llm = llm
+        if tools:
+            self.llm_with_tools = llm.bind_tools(
+                tools=[calculator]
             )
             logger.debug("Using Llama 2 7B LLM with tools")
+        else:
+            logger.debug("Using Llama 2 7B LLM without tools")
 
 class LLM_MISTRAL_7B(LLM):
     """
@@ -355,16 +347,14 @@ class LLM_MISTRAL_7B(LLM):
             num_ctx=32768,
         )
 
-        if not tools:
-            self.llm = llm
-            logger.debug("Using Mistral 7B LLM using Ollama without tools")
-        else:
-            self.llm = initialize_agent(
-                tools=[calculator],
-                llm=llm,
-                agent_type=AgentType.ZERO_SHOT_REACT_DESCRIPTION,
+        self.llm = llm
+        if tools:
+            self.llm_with_tools = llm.bind_tools(
+                tools=[calculator]
             )
             logger.debug("Using Mistral 7B LLM using Ollama with tools")
+        else:
+            logger.debug("Using Mistral 7B LLM using Ollama without tools")
 
 class LLM_LLAMA3_8B(LLM):
     """
@@ -385,16 +375,14 @@ class LLM_LLAMA3_8B(LLM):
             num_ctx=128000,
         )
 
-        if not tools:
-            self.llm = llm
-            logger.debug("Using Llama3.1 8B LLM without tools")
-        else:
-            self.llm = initialize_agent(
-                tools=[calculator],
-                llm=llm,
-                agent_type=AgentType.ZERO_SHOT_REACT_DESCRIPTION,
+        self.llm = llm
+        if tools:
+            self.llm_with_tools = llm.bind_tools(
+                tools=[calculator]
             )
             logger.debug("Using Llama3.1 8B LLM with tools")
+        else:
+            logger.debug("Using Llama3.1 8B LLM without tools")
 
 class LLM_GEMMA3_12B_Ollama(LLM):
     """
@@ -415,16 +403,14 @@ class LLM_GEMMA3_12B_Ollama(LLM):
             num_ctx=128000,
         )
 
-        if not tools:
-            self.llm = llm
-            logger.debug("Using Gemma3 12B LLM using Ollama without tools")
-        else:
-            self.llm = initialize_agent(
-                tools=[calculator],
-                llm=llm,
-                agent_type=AgentType.ZERO_SHOT_REACT_DESCRIPTION,
+        self.llm = llm
+        if tools:
+            self.llm_with_tools = llm.bind_tools(
+                tools=[calculator]
             )
             logger.debug("Using Gemma3 12B LLM using Ollama with tools")
+        else:
+            logger.debug("Using Gemma3 12B LLM using Ollama without tools")
 
 """
 This dictionary maps model names to their respective LLM classes and
