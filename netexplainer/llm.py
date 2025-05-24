@@ -7,11 +7,8 @@ from pathlib import Path
 from dotenv import load_dotenv
 from netexplainer.logger import configure_logger
 from langchain_community.document_loaders import TextLoader
-from langchain_core.output_parsers import StrOutputParser
 from langchain.prompts import ChatPromptTemplate
 from langchain_google_genai import ChatGoogleGenerativeAI
-from langchain.agents import initialize_agent, AgentType, AgentExecutor
-from langchain_core.runnables import RunnableLambda
 from langchain_core.tools import tool
 from langchain_core.messages import ToolMessage, BaseMessage
 from langchain_ollama import ChatOllama
