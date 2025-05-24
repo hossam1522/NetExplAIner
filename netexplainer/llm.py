@@ -7,13 +7,10 @@ from pathlib import Path
 from dotenv import load_dotenv
 from netexplainer.logger import configure_logger
 from langchain_community.document_loaders import TextLoader
-from langchain_core.output_parsers import StrOutputParser
 from langchain.prompts import ChatPromptTemplate
 from langchain_google_genai import ChatGoogleGenerativeAI
-from langchain.agents import initialize_agent, AgentType, AgentExecutor
-from langchain_core.runnables import RunnableLambda
 from langchain_core.tools import tool
-from langchain.tools import Tool
+from langchain_core.messages import ToolMessage, BaseMessage
 from langchain_ollama import ChatOllama
 
 warnings.filterwarnings("ignore", category=DeprecationWarning)
@@ -42,15 +39,6 @@ def calculator(expression: str) -> str:
         )
     )
 
-Tool(
-    name="calculator",
-    func=calculator,
-    description="Use this tool to calculate mathematical expressions. "
-                "The expression should be a single line mathematical expression "
-                "that solves the problem. Examples: '37593 * 67' for '37593 times 67', "
-                "'37593**(1/5)' for '37593^(1/5)'",
-)
-
 class LLM:
     def __init__(self, data_path: str):
         """
@@ -71,8 +59,44 @@ class LLM:
         load_dotenv()
         self.llm = None
         self.model = None
+        self.tools = False
         loader = TextLoader(data_path)
         self.file = loader.load()
+
+    def call_llm(self, messages: list[BaseMessage], tools: bool = False) -> str:
+        """
+        Call the LLM with the provided messages and return the response.
+        Args:
+            messages (list[BaseMessage]): The list of messages to process
+            tools (bool): Whether to use tools or not
+        Returns:
+            str: The response from the LLM
+        """
+        if tools:
+            response = self.llm_with_tools.invoke(messages)
+        else:
+            response = self.llm.invoke(messages)
+
+        if response.tool_calls:
+            tool_responses = []
+            for tool_call in response.tool_calls:
+                if tool_call['name'] == "calculator":
+                    result = calculator.invoke(tool_call['args']['expression'])
+                    tool_responses.append(
+                        ToolMessage(
+                            content=result,
+                            name=tool_call['name'],
+                            tool_call_id=tool_call['id']
+                        )
+                    )
+
+            messages.append(response)
+            messages.extend(tool_responses)
+
+            final_response = self.llm.invoke(messages)
+            return final_response.content
+        else:
+            return response.content
 
     def get_subquestions(self, question: str) -> list:
         """
@@ -87,22 +111,11 @@ class LLM:
         3 sub-questions as maximum. The sub-questions cannot answer directly the input question.
         Input question: {question}"""
         prompt_decomposition = ChatPromptTemplate.from_template(template)
+        messages = {"question": question}
 
-        if isinstance(self.llm, AgentExecutor):
-            generate_queries_decomposition = (
-                prompt_decomposition
-                | self.llm
-                | RunnableLambda(lambda x: x["output"])
-                | StrOutputParser()
-                | (lambda x: x.split("\n")))
-        else:
-            generate_queries_decomposition = (
-                prompt_decomposition
-                | self.llm
-                | StrOutputParser()
-                | (lambda x: x.split("\n")))
+        sub_questions = self.call_llm(prompt_decomposition.format_messages(**messages), tools=self.tools)
+        sub_questions = [q.strip() for q in sub_questions.split('\n') if q.strip()]
 
-        sub_questions = list(filter(None, generate_queries_decomposition.invoke({"question":question})))
         logger.debug(f"Model: {self.model}, Question: {question}, Sub-questions generated: {sub_questions}")
         return sub_questions
 
@@ -120,24 +133,11 @@ class LLM:
         Question: "{question}"
         Trace:
         {traces}"""
-
         prompt = ChatPromptTemplate.from_template(template)
+        messages = {"traces": self.file[0].page_content, "question": question}
 
-        if isinstance(self.llm, AgentExecutor):
-            chain = (
-                prompt
-                | self.llm
-                | RunnableLambda(lambda x: x["output"])
-                | StrOutputParser()
-            )
-        else:
-            chain = (
-                prompt
-                | self.llm
-                | StrOutputParser()
-            )
+        answer = self.call_llm(prompt.format_messages(**messages), tools=self.tools)
 
-        answer = chain.invoke({"traces": self.file[0].page_content, "question": question})
         logger.debug(f"Model: {self.model}, Question: {question}, Answer: {answer}")
         return answer
 
@@ -169,22 +169,10 @@ class LLM:
         {context}
         Use these to synthesize an answer to the question: {question}"""
         prompt = ChatPromptTemplate.from_template(template)
+        messages = {"context": self.format_qa_pairs(subquestions, answers), "question": question}
 
-        if isinstance(self.llm, AgentExecutor):
-            chain = (
-                prompt
-                | self.llm
-                | RunnableLambda(lambda x: x["output"])
-                | StrOutputParser()
-            )
-        else:
-            chain = (
-                prompt
-                | self.llm
-                | StrOutputParser()
-            )
+        final_answer = self.call_llm(prompt.format_messages(**messages), tools=self.tools)
 
-        final_answer = chain.invoke({"context": self.format_qa_pairs(subquestions, answers), "question": question})
         logger.debug(f"Model: {self.model}, Question: {question}, Final answer: {final_answer}")
         return final_answer
 
@@ -203,6 +191,7 @@ class LLM_GEMINI(LLM):
         os.environ["GOOGLE_API_KEY"] = os.getenv("GOOGLE_API_KEY")
 
         self.model = "gemini-2.0-flash"
+        self.tools = tools
 
         llm = ChatGoogleGenerativeAI(
             model=self.model,
@@ -211,16 +200,14 @@ class LLM_GEMINI(LLM):
             timeout=None,
         )
 
-        if not tools:
-            self.llm = llm
-            logger.debug("Using Gemini 2.0 Flash LLM without tools")
-        else:
-            self.llm = initialize_agent(
-                tools=[calculator],
-                llm=llm,
-                agent_type=AgentType.ZERO_SHOT_REACT_DESCRIPTION,
+        self.llm = llm
+        if tools:
+            self.llm_with_tools = llm.bind_tools(
+                tools=[calculator]
             )
             logger.debug("Using Gemini 2.0 Flash LLM with tools")
+        else:
+            logger.debug("Using Gemini 2.0 Flash LLM without tools")
 
 class LLM_QWEN_2_5_7B(LLM):
     """
@@ -235,22 +222,21 @@ class LLM_QWEN_2_5_7B(LLM):
         super().__init__(data_path)
 
         self.model = "qwen2.5"
+        self.tools = tools
 
         llm = ChatOllama(
             model=self.model,
             num_ctx=32768,
         )
 
-        if not tools:
-            self.llm = llm
-            logger.debug("Using Qwen2.5 7B LLM without tools")
-        else:
-            self.llm = initialize_agent(
-                tools=[calculator],
-                llm=llm,
-                agent_type=AgentType.ZERO_SHOT_REACT_DESCRIPTION,
+        self.llm = llm
+        if tools:
+            self.llm_with_tools = llm.bind_tools(
+                tools=[calculator]
             )
             logger.debug("Using Qwen2.5 7B LLM with tools")
+        else:
+            logger.debug("Using Qwen2.5 7B LLM without tools")
 
 class LLM_GEMMA_3(LLM):
     """
@@ -266,6 +252,7 @@ class LLM_GEMMA_3(LLM):
         os.environ["GOOGLE_API_KEY"] = os.getenv("GOOGLE_API_KEY")
 
         self.model = "gemma-3-27b-it"
+        self.tools = tools
 
         llm = ChatGoogleGenerativeAI(
             model=self.model,
@@ -274,16 +261,14 @@ class LLM_GEMMA_3(LLM):
             timeout=None,
         )
 
-        if not tools:
-            self.llm = llm
-            logger.debug("Using Gemma 3 LLM without tools")
-        else:
-            self.llm = initialize_agent(
-                tools=[calculator],
-                llm=llm,
-                agent_type=AgentType.ZERO_SHOT_REACT_DESCRIPTION,
+        self.llm = llm
+        if tools:
+            self.llm_with_tools = llm.bind_tools(
+                tools=[calculator]
             )
             logger.debug("Using Gemma 3 LLM with tools")
+        else:
+            logger.debug("Using Gemma 3 LLM without tools")
 
 class LLM_LLAMA2_7B(LLM):
     """
@@ -298,21 +283,20 @@ class LLM_LLAMA2_7B(LLM):
         super().__init__(data_path)
 
         self.model = "llama2"
+        self.tools = tools
 
         llm = ChatOllama(
             model=self.model,
         )
 
-        if not tools:
-            self.llm = llm
-            logger.debug("Using Llama 2 7B LLM without tools")
-        else:
-            self.llm = initialize_agent(
-                tools=[calculator],
-                llm=llm,
-                agent_type=AgentType.ZERO_SHOT_REACT_DESCRIPTION,
+        self.llm = llm
+        if tools:
+            self.llm_with_tools = llm.bind_tools(
+                tools=[calculator]
             )
             logger.debug("Using Llama 2 7B LLM with tools")
+        else:
+            logger.debug("Using Llama 2 7B LLM without tools")
 
 class LLM_MISTRAL_7B(LLM):
     """
@@ -327,22 +311,21 @@ class LLM_MISTRAL_7B(LLM):
         super().__init__(data_path)
 
         self.model = "mistral"
+        self.tools = tools
 
         llm = ChatOllama(
             model=self.model,
             num_ctx=32768,
         )
 
-        if not tools:
-            self.llm = llm
-            logger.debug("Using Mistral 7B LLM using Ollama without tools")
-        else:
-            self.llm = initialize_agent(
-                tools=[calculator],
-                llm=llm,
-                agent_type=AgentType.ZERO_SHOT_REACT_DESCRIPTION,
+        self.llm = llm
+        if tools:
+            self.llm_with_tools = llm.bind_tools(
+                tools=[calculator]
             )
             logger.debug("Using Mistral 7B LLM using Ollama with tools")
+        else:
+            logger.debug("Using Mistral 7B LLM using Ollama without tools")
 
 class LLM_LLAMA3_8B(LLM):
     """
@@ -357,22 +340,21 @@ class LLM_LLAMA3_8B(LLM):
         super().__init__(data_path)
 
         self.model = "llama3.1"
+        self.tools = tools
 
         llm = ChatOllama(
             model=self.model,
             num_ctx=128000,
         )
 
-        if not tools:
-            self.llm = llm
-            logger.debug("Using Llama3.1 8B LLM without tools")
-        else:
-            self.llm = initialize_agent(
-                tools=[calculator],
-                llm=llm,
-                agent_type=AgentType.ZERO_SHOT_REACT_DESCRIPTION,
+        self.llm = llm
+        if tools:
+            self.llm_with_tools = llm.bind_tools(
+                tools=[calculator]
             )
             logger.debug("Using Llama3.1 8B LLM with tools")
+        else:
+            logger.debug("Using Llama3.1 8B LLM without tools")
 
 class LLM_GEMMA3_12B_Ollama(LLM):
     """
@@ -387,22 +369,21 @@ class LLM_GEMMA3_12B_Ollama(LLM):
         super().__init__(data_path)
 
         self.model = "gemma3:12b"
+        self.tools = tools
 
         llm = ChatOllama(
             model=self.model,
             num_ctx=128000,
         )
 
-        if not tools:
-            self.llm = llm
-            logger.debug("Using Gemma3 12B LLM using Ollama without tools")
-        else:
-            self.llm = initialize_agent(
-                tools=[calculator],
-                llm=llm,
-                agent_type=AgentType.ZERO_SHOT_REACT_DESCRIPTION,
+        self.llm = llm
+        if tools:
+            self.llm_with_tools = llm.bind_tools(
+                tools=[calculator]
             )
             logger.debug("Using Gemma3 12B LLM using Ollama with tools")
+        else:
+            logger.debug("Using Gemma3 12B LLM using Ollama without tools")
 
 """
 This dictionary maps model names to their respective LLM classes and
