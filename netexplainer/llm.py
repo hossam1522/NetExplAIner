@@ -13,7 +13,7 @@ from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain.agents import initialize_agent, AgentType, AgentExecutor
 from langchain_core.runnables import RunnableLambda
 from langchain_core.tools import tool
-from langchain.tools import Tool
+from langchain_core.messages import ToolMessage, BaseMessage
 from langchain_ollama import ChatOllama
 
 warnings.filterwarnings("ignore", category=DeprecationWarning)
@@ -64,6 +64,37 @@ class LLM:
         self.model = None
         loader = TextLoader(data_path)
         self.file = loader.load()
+
+    def call_llm(self, messages: list[BaseMessage]) -> str:
+        """
+        Call the LLM with the provided messages and return the response.
+        Args:
+            messages (list[BaseMessage]): The list of messages to process
+        Returns:
+            str: The response from the LLM
+        """
+        response = self.llm_with_tools.invoke(messages)
+
+        if response.tool_calls:
+            tool_responses = []
+            for tool_call in response.tool_calls:
+                if tool_call['name'] == "calculator":
+                    result = calculator.invoke(tool_call['args']['expression'])
+                    tool_responses.append(
+                        ToolMessage(
+                            content=result,
+                            name=tool_call['name'],
+                            tool_call_id=tool_call['id']
+                        )
+                    )
+
+            messages.append(response)
+            messages.extend(tool_responses)
+
+            final_response = self.llm.invoke(messages)
+            return final_response.content
+        else:
+            return response.content
 
     def get_subquestions(self, question: str) -> list:
         """
