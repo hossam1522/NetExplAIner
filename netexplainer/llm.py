@@ -165,7 +165,8 @@ class LLM:
         Returns:
             str: The final answer
         """
-        template = """Here is a set of Q+A pairs:
+        template = """DO NOT GIVE FUNCTIONS OR CODE, ONLY THE ANSWER.
+        Here is a set of Q+A pairs:
         {context}
         Use these to synthesize an answer to the question: {question}"""
         prompt = ChatPromptTemplate.from_template(template)
