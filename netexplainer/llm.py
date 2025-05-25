@@ -130,7 +130,8 @@ class LLM:
         template = """You are a network analyst that answer questions about network traces.
         Use the following network trace to answer the questions.
         DON'T GIVE FUNCTIONS OR CODE, ONLY THE ANSWER.
-        IF YOU USE THE CALCULATOR TOOL, DO NOT USE PYTHON SYNTAX, ONLY MATH EXPRESSIONS.
+        IF YOU USE THE CALCULATOR TOOL, DO NOT USE PYTHON SYNTAX, ONLY MATH EXPRESSIONS,
+        AND DO NOT USE FUNCTIONS LIKE sum(), mean(), len(), etc. NOR VARIABLES, ONLY NUMBERS AND OPERATORS.
         Question: "{question}"
         Trace:
         {traces}"""
@@ -167,7 +168,8 @@ class LLM:
             str: The final answer
         """
         template = """DO NOT GIVE FUNCTIONS OR CODE, ONLY THE ANSWER.
-        IF YOU USE THE CALCULATOR TOOL, DO NOT USE PYTHON SYNTAX, ONLY MATH EXPRESSIONS.
+        IF YOU USE THE CALCULATOR TOOL, DO NOT USE PYTHON SYNTAX, ONLY MATH EXPRESSIONS,
+        AND DO NOT USE FUNCTIONS LIKE sum(), mean(), len(), etc. NOR VARIABLES, ONLY NUMBERS AND OPERATORS.
         Here is a set of Q+A pairs:
         {context}
         Use these to synthesize an answer to the question: {question}"""

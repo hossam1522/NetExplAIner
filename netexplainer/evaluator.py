@@ -146,7 +146,8 @@ class Evaluator:
 
                                 try:
                                     if dataset.divide_in_subquestions[question]:
-                                        if not isinstance(llm.llm, ChatOllama): time.sleep(2)
+                                        #if not isinstance(llm.llm, ChatOllama): time.sleep(2)
+                                        time.sleep(0.5)
                                         subquestions_eval = self.evaluate_subquestions(question, subquestions, dataset)
                                     else:
                                         subquestions_eval = 100
@@ -155,7 +156,8 @@ class Evaluator:
                                     subquestions_eval = "ERROR"
 
                                 try:
-                                    if not isinstance(llm.llm, ChatOllama): time.sleep(2)
+                                    #if not isinstance(llm.llm, ChatOllama): time.sleep(2)
+                                    time.sleep(0.5)
                                     answers_eval = self.evaluate_answer(question, final_answer, dataset)
                                 except Exception as e:
                                     logger.error(f"Error evaluating answers: {e}")
