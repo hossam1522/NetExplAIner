@@ -28,6 +28,10 @@ def calculator(expression: str) -> str:
     Examples:
         "37593 * 67" for "37593 times 67"
         "37593**(1/5)" for "37593^(1/5)"
+
+    DO NOT USE PYTHON SYNTAX, ONLY MATH EXPRESSIONS.
+    DO NOT USE VARIABLES, ONLY NUMBERS AND OPERATORS.
+    DO NOT USE FUNCTIONS LIKE sum(), len(), round(), count(), etc.
     """
     logger.debug(f"Calculator tool called with expression: {expression}")
     local_dict = {"pi": math.pi, "e": math.e}
