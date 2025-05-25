@@ -28,10 +28,6 @@ def calculator(expression: str) -> str:
     Examples:
         "37593 * 67" for "37593 times 67"
         "37593**(1/5)" for "37593^(1/5)"
-
-    DO NOT USE PYTHON SYNTAX, ONLY MATH EXPRESSIONS.
-    DO NOT USE VARIABLES, ONLY NUMBERS AND OPERATORS.
-    DO NOT USE FUNCTIONS LIKE sum(), len(), round(), count(), etc.
     """
     logger.debug(f"Calculator tool called with expression: {expression}")
     local_dict = {"pi": math.pi, "e": math.e}
@@ -134,6 +130,7 @@ class LLM:
         template = """You are a network analyst that answer questions about network traces.
         Use the following network trace to answer the questions.
         DON'T GIVE FUNCTIONS OR CODE, ONLY THE ANSWER.
+        IF YOU USE THE CALCULATOR TOOL, DO NOT USE PYTHON SYNTAX, ONLY MATH EXPRESSIONS.
         Question: "{question}"
         Trace:
         {traces}"""
@@ -170,6 +167,7 @@ class LLM:
             str: The final answer
         """
         template = """DO NOT GIVE FUNCTIONS OR CODE, ONLY THE ANSWER.
+        IF YOU USE THE CALCULATOR TOOL, DO NOT USE PYTHON SYNTAX, ONLY MATH EXPRESSIONS.
         Here is a set of Q+A pairs:
         {context}
         Use these to synthesize an answer to the question: {question}"""
