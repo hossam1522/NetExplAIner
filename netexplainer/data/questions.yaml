@@ -1,6 +1,6 @@
 models:
-  - "mistral-7b"
-  #- "qwen2.5-7b"
+  #- "mistral-7b"
+  - "qwen2.5-7b"
   #- "llama2-7b"
 
 questions:
