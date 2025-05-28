@@ -129,7 +129,7 @@ class LLM:
         """
         template = """You are a network analyst that answer questions about network traces.
         Use the following network trace to answer the questions.
-        DON'T GIVE FUNCTIONS OR CODE, ONLY THE ANSWER.
+        DON'T GIVE FUNCTIONS OR CODE, ONLY THE ANSWER. Use the calculator tool if needed.
         Question: "{question}"
         Trace:
         {traces}"""
@@ -168,7 +168,8 @@ class LLM:
         template = """DO NOT GIVE FUNCTIONS OR CODE, ONLY THE ANSWER.
         Here is a set of Q+A pairs:
         {context}
-        Use these to synthesize an answer to the question: {question}"""
+        Use these to synthesize an answer to the question: {question}
+        Use the calculator tool if needed."""
         prompt = ChatPromptTemplate.from_template(template)
         messages = {"context": self.format_qa_pairs(subquestions, answers), "question": question}
 
