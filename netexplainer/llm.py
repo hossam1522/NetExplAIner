@@ -93,8 +93,7 @@ class LLM:
             messages.append(response)
             messages.extend(tool_responses)
 
-            final_response = self.call_llm(messages, tools=self.tools)
-            return final_response.content
+            return self.call_llm(messages, tools=tools)
         else:
             return response.content
 
