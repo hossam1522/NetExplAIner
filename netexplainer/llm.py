@@ -221,7 +221,7 @@ class LLM_QWEN_2_5_7B(LLM):
         """
         super().__init__(data_path)
 
-        self.model = "qwen2.5:32b"
+        self.model = "qwen2.5:72b"
         self.tools = tools
 
         llm = ChatOllama(
