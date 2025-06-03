@@ -385,6 +385,35 @@ class LLM_GEMMA3_12B_Ollama(LLM):
         else:
             logger.debug("Using Gemma3 12B LLM using Ollama without tools")
 
+class LLM_PHI4(LLM):
+    """
+    Class for Phi4 LLM using Ollama
+    """
+    def __init__(self, data_path: str, tools: bool = False):
+        """
+        Initialize the LLM object with the file provided
+        Args:
+            data_path (str): The path of the file to process
+        """
+        super().__init__(data_path)
+
+        self.model = "phi4"
+        self.tools = tools
+
+        llm = ChatOllama(
+            model=self.model,
+            num_ctx=16000,
+        )
+
+        self.llm = llm
+        if tools:
+            self.llm_with_tools = llm.bind_tools(
+                tools=[calculator]
+            )
+            logger.debug("Using Phi4 LLM using Ollama with tools")
+        else:
+            logger.debug("Using Phi4 LLM using Ollama without tools")
+
 """
 This dictionary maps model names to their respective LLM classes and
 if windows context size is small or big.
@@ -397,4 +426,5 @@ models = {
     "mistral-7b": (LLM_MISTRAL_7B, "big"),
     "llama3.1-8b": (LLM_LLAMA3_8B, "big"),
     "gemma-3-12b-ollama": (LLM_GEMMA3_12B_Ollama, "big"),
+    "phi4": (LLM_PHI4, "big"),
 }

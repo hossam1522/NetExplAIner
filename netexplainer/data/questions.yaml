@@ -1,6 +1,7 @@
 models:
+  - "phi4"
   #- "mistral-7b"
-  - "qwen2.5-7b"
+  #- "qwen2.5-7b"
   #- "llama2-7b"
 
 questions:
