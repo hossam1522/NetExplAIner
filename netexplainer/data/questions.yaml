@@ -6,13 +6,13 @@ models:
 
 questions:
   - question: "What is the total number of packets in the trace?"
-    divide_in_subquestions: True
+    divide_in_subquestions: False
     subquestions:
       - "What is the first packet number?"
       - "What is the last packet number?"
 
   - question: "How many unique communicators are present in the trace?"
-    divide_in_subquestions: True
+    divide_in_subquestions: False
     subquestions:
       - "How many unique source IPs are there?"
       - "How many unique destination IPs are there?"
@@ -26,7 +26,7 @@ questions:
       - "How many times does each IP appear in both source and destination?"
 
   - question: "What is the total size of transmitted bytes?"
-    divide_in_subquestions: True
+    divide_in_subquestions: False
     subquestions:
       - "How many packets are in the trace?"
       - "What is the size of each packet in bytes?"

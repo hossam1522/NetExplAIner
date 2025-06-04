@@ -41,4 +41,4 @@ if __name__ == "__main__":
     evaluator = Evaluator()
 
     evaluator.evaluate(models_to_evaluate=models_to_evaluate, tools=False)
-    evaluator.evaluate(models_to_evaluate=models_to_evaluate, tools=True)
+    #evaluator.evaluate(models_to_evaluate=models_to_evaluate, tools=True)
