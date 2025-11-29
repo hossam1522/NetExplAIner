@@ -14,7 +14,9 @@ from langchain_core.messages import ToolMessage, BaseMessage
 from langchain_ollama import ChatOllama
 
 warnings.filterwarnings("ignore", category=DeprecationWarning)
-configure_logger(name="llm", filepath=Path(__file__).parent / "data/evaluation/netexplainer.log")
+configure_logger(
+    name="llm", filepath=Path(__file__).parent / "data/evaluation/netexplainer.log"
+)
 logger = logging.getLogger("llm")
 
 
@@ -39,6 +41,7 @@ def calculator(expression: str) -> str:
         )
     )
 
+
 class LLM:
     def __init__(self, data_path: str):
         """
@@ -47,14 +50,20 @@ class LLM:
             data_path (str): The path of the file to process
         """
         if not os.path.exists(data_path):
-            logger.error(f'The path {data_path} does not exist')
-            raise FileNotFoundError(f'The path {data_path} does not exist')
+            logger.error(f"The path {data_path} does not exist")
+            raise FileNotFoundError(f"The path {data_path} does not exist")
         elif not os.path.isfile(data_path):
-            logger.error(f'The path {data_path} is not a file, please provide a file')
-            raise FileExistsError(f'The path {data_path} is not a file, please provide a file')
-        elif not data_path.endswith('.txt'):
-            logger.error(f'The file {data_path} is not a text file, please provide a txt file')
-            raise TypeError(f'The file {data_path} is not a text file, please provide a txt file')
+            logger.error(f"The path {data_path} is not a file, please provide a file")
+            raise FileExistsError(
+                f"The path {data_path} is not a file, please provide a file"
+            )
+        elif not data_path.endswith(".txt"):
+            logger.error(
+                f"The file {data_path} is not a text file, please provide a txt file"
+            )
+            raise TypeError(
+                f"The file {data_path} is not a text file, please provide a txt file"
+            )
 
         load_dotenv()
         self.llm = None
@@ -80,13 +89,13 @@ class LLM:
         if response.tool_calls:
             tool_responses = []
             for tool_call in response.tool_calls:
-                if tool_call['name'] == "calculator":
-                    result = calculator.invoke(tool_call['args']['expression'])
+                if tool_call["name"] == "calculator":
+                    result = calculator.invoke(tool_call["args"]["expression"])
                     tool_responses.append(
                         ToolMessage(
                             content=result,
-                            name=tool_call['name'],
-                            tool_call_id=tool_call['id']
+                            name=tool_call["name"],
+                            tool_call_id=tool_call["id"],
                         )
                     )
 
@@ -112,10 +121,14 @@ class LLM:
         prompt_decomposition = ChatPromptTemplate.from_template(template)
         messages = {"question": question}
 
-        sub_questions = self.call_llm(prompt_decomposition.format_messages(**messages), tools=self.tools)
-        sub_questions = [q.strip() for q in sub_questions.split('\n') if q.strip()]
+        sub_questions = self.call_llm(
+            prompt_decomposition.format_messages(**messages), tools=self.tools
+        )
+        sub_questions = [q.strip() for q in sub_questions.split("\n") if q.strip()]
 
-        logger.debug(f"Model: {self.model}, Question: {question}, Sub-questions generated: {sub_questions}")
+        logger.debug(
+            f"Model: {self.model}, Question: {question}, Sub-questions generated: {sub_questions}"
+        )
         return sub_questions
 
     def answer_subquestion(self, question: str) -> str:
@@ -154,7 +167,7 @@ class LLM:
             formatted_string += f"Question {i}: {question}\nAnswer {i}: {answer}\n\n"
         return formatted_string.strip()
 
-    def get_final_answer(self, question:str, subquestions: list, answers: list) -> str:
+    def get_final_answer(self, question: str, subquestions: list, answers: list) -> str:
         """
         Combine the questions and answers to get a final answer
         Args:
@@ -169,11 +182,18 @@ class LLM:
         {context}
         Use these to synthesize an answer to the question: {question}"""
         prompt = ChatPromptTemplate.from_template(template)
-        messages = {"context": self.format_qa_pairs(subquestions, answers), "question": question}
+        messages = {
+            "context": self.format_qa_pairs(subquestions, answers),
+            "question": question,
+        }
 
-        final_answer = self.call_llm(prompt.format_messages(**messages), tools=self.tools)
+        final_answer = self.call_llm(
+            prompt.format_messages(**messages), tools=self.tools
+        )
 
-        logger.debug(f"Model: {self.model}, Question: {question}, Final answer: {final_answer}")
+        logger.debug(
+            f"Model: {self.model}, Question: {question}, Final answer: {final_answer}"
+        )
         return final_answer
 
 
@@ -181,6 +201,7 @@ class LLM_GEMINI(LLM):
     """
     Class for Google Gemini LLM
     """
+
     def __init__(self, data_path: str, tools: bool = False):
         """
         Initialize the LLM object with the file provided
@@ -202,17 +223,17 @@ class LLM_GEMINI(LLM):
 
         self.llm = llm
         if tools:
-            self.llm_with_tools = llm.bind_tools(
-                tools=[calculator]
-            )
+            self.llm_with_tools = llm.bind_tools(tools=[calculator])
             logger.debug("Using Gemini 2.0 Flash LLM with tools")
         else:
             logger.debug("Using Gemini 2.0 Flash LLM without tools")
+
 
 class LLM_QWEN_2_5_7B(LLM):
     """
     Class for Qwen2.5 7B LLM
     """
+
     def __init__(self, data_path: str, tools: bool = False):
         """
         Initialize the LLM object with the file provided
@@ -231,17 +252,17 @@ class LLM_QWEN_2_5_7B(LLM):
 
         self.llm = llm
         if tools:
-            self.llm_with_tools = llm.bind_tools(
-                tools=[calculator]
-            )
+            self.llm_with_tools = llm.bind_tools(tools=[calculator])
             logger.debug("Using Qwen2.5 7B LLM with tools")
         else:
             logger.debug("Using Qwen2.5 7B LLM without tools")
+
 
 class LLM_GEMMA_3(LLM):
     """
     Class for Google Gemma 3 LLM
     """
+
     def __init__(self, data_path: str, tools: bool = False):
         """
         Initialize the LLM object with the file provided
@@ -263,17 +284,17 @@ class LLM_GEMMA_3(LLM):
 
         self.llm = llm
         if tools:
-            self.llm_with_tools = llm.bind_tools(
-                tools=[calculator]
-            )
+            self.llm_with_tools = llm.bind_tools(tools=[calculator])
             logger.debug("Using Gemma 3 LLM with tools")
         else:
             logger.debug("Using Gemma 3 LLM without tools")
+
 
 class LLM_LLAMA2_7B(LLM):
     """
     Class for Llama 2 7B LLM
     """
+
     def __init__(self, data_path: str, tools: bool = False):
         """
         Initialize the LLM object with the file provided
@@ -291,17 +312,17 @@ class LLM_LLAMA2_7B(LLM):
 
         self.llm = llm
         if tools:
-            self.llm_with_tools = llm.bind_tools(
-                tools=[calculator]
-            )
+            self.llm_with_tools = llm.bind_tools(tools=[calculator])
             logger.debug("Using Llama 2 7B LLM with tools")
         else:
             logger.debug("Using Llama 2 7B LLM without tools")
+
 
 class LLM_MISTRAL_7B(LLM):
     """
     Class for Mistral 7B LLM using Ollama
     """
+
     def __init__(self, data_path: str, tools: bool = False):
         """
         Initialize the LLM object with the file provided
@@ -320,17 +341,17 @@ class LLM_MISTRAL_7B(LLM):
 
         self.llm = llm
         if tools:
-            self.llm_with_tools = llm.bind_tools(
-                tools=[calculator]
-            )
+            self.llm_with_tools = llm.bind_tools(tools=[calculator])
             logger.debug("Using Mistral 7B LLM using Ollama with tools")
         else:
             logger.debug("Using Mistral 7B LLM using Ollama without tools")
+
 
 class LLM_LLAMA3_8B(LLM):
     """
     Class for Llama3.1 8B LLM
     """
+
     def __init__(self, data_path: str, tools: bool = False):
         """
         Initialize the LLM object with the file provided
@@ -349,17 +370,17 @@ class LLM_LLAMA3_8B(LLM):
 
         self.llm = llm
         if tools:
-            self.llm_with_tools = llm.bind_tools(
-                tools=[calculator]
-            )
+            self.llm_with_tools = llm.bind_tools(tools=[calculator])
             logger.debug("Using Llama3.1 8B LLM with tools")
         else:
             logger.debug("Using Llama3.1 8B LLM without tools")
+
 
 class LLM_GEMMA3_12B_Ollama(LLM):
     """
     Class for Gemma3 12B LLM using Ollama
     """
+
     def __init__(self, data_path: str, tools: bool = False):
         """
         Initialize the LLM object with the file provided
@@ -378,17 +399,17 @@ class LLM_GEMMA3_12B_Ollama(LLM):
 
         self.llm = llm
         if tools:
-            self.llm_with_tools = llm.bind_tools(
-                tools=[calculator]
-            )
+            self.llm_with_tools = llm.bind_tools(tools=[calculator])
             logger.debug("Using Gemma3 12B LLM using Ollama with tools")
         else:
             logger.debug("Using Gemma3 12B LLM using Ollama without tools")
+
 
 class LLM_PHI4(LLM):
     """
     Class for Phi4 LLM using Ollama
     """
+
     def __init__(self, data_path: str, tools: bool = False):
         """
         Initialize the LLM object with the file provided
@@ -407,12 +428,40 @@ class LLM_PHI4(LLM):
 
         self.llm = llm
         if tools:
-            self.llm_with_tools = llm.bind_tools(
-                tools=[calculator]
-            )
+            self.llm_with_tools = llm.bind_tools(tools=[calculator])
             logger.debug("Using Phi4 LLM using Ollama with tools")
         else:
             logger.debug("Using Phi4 LLM using Ollama without tools")
+
+
+class LLM_GRANITE3(LLM):
+    """
+    Class for Granite3.3 LLM using Ollama
+    """
+
+    def __init__(self, data_path: str, tools: bool = False):
+        """
+        Initialize the LLM object with the file provided
+        Args:
+            data_path (str): The path of the file to process
+        """
+        super().__init__(data_path)
+
+        self.model = "granite3.3:8b"
+        self.tools = tools
+
+        llm = ChatOllama(
+            model=self.model,
+            num_ctx=32000,
+        )
+
+        self.llm = llm
+        if tools:
+            self.llm_with_tools = llm.bind_tools(tools=[calculator])
+            logger.debug("Using Granite3.3 LLM using Ollama with tools")
+        else:
+            logger.debug("Using Granite3.3 LLM using Ollama without tools")
+
 
 """
 This dictionary maps model names to their respective LLM classes and
@@ -426,5 +475,6 @@ models = {
     "mistral-7b": (LLM_MISTRAL_7B, "big"),
     "llama3.1-8b": (LLM_LLAMA3_8B, "big"),
     "gemma-3-12b-ollama": (LLM_GEMMA3_12B_Ollama, "big"),
+    "granite3.3-8b": (LLM_GRANITE3, "big"),
     "phi4": (LLM_PHI4, "big"),
 }
