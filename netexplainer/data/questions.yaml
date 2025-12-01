@@ -1,5 +1,6 @@
 models:
-  - "granite3.3-8b"
+  - "gpt-oss-20b"
+  #- "granite3.3-8b"
   #- "phi4"
   #- "mistral-7b"
   #- "qwen2.5-7b"
