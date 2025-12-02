@@ -492,6 +492,35 @@ class LLM_GPT_OSS(LLM):
             logger.debug("Using gpt-oss LLM using Ollama without tools")
 
 
+class LLM_AYA_EXPANSE(LLM):
+    """
+    Class for aya-expanse LLM using Ollama
+    """
+
+    def __init__(self, data_path: str, tools: bool = False):
+        """
+        Initialize the LLM object with the file provided
+        Args:
+            data_path (str): The path of the file to process
+        """
+        super().__init__(data_path)
+
+        self.model = "aya-expanse:8b"
+        self.tools = tools
+
+        llm = ChatOllama(
+            model=self.model,
+            num_ctx=8192,
+        )
+
+        self.llm = llm
+        if tools:
+            self.llm_with_tools = llm.bind_tools(tools=[calculator])
+            logger.debug("Using aya-expanse LLM using Ollama with tools")
+        else:
+            logger.debug("Using aya-expanse LLM using Ollama without tools")
+
+
 """
 This dictionary maps model names to their respective LLM classes and
 if windows context size is small or big.
@@ -507,4 +536,5 @@ models = {
     "granite3.3-8b": (LLM_GRANITE3, "big"),
     "phi4": (LLM_PHI4, "big"),
     "gpt-oss-20b": (LLM_GPT_OSS, "big"),
+    "aya-expanse-8b": (LLM_AYA_EXPANSE, "small"),
 }

@@ -1,10 +1,5 @@
 models:
-  - "gpt-oss-20b"
-  #- "granite3.3-8b"
-  #- "phi4"
-  #- "mistral-7b"
-  #- "qwen2.5-7b"
-  #- "llama2-7b"
+  - "aya-expanse-8b"
 
 questions:
   - question: "What is the total number of packets in the trace?"
