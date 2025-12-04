@@ -1,5 +1,5 @@
 models:
-  - "aya-expanse-8b"
+  - "deepseek-r1-8b"
 
 questions:
   - question: "What is the total number of packets in the trace?"
