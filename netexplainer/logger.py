@@ -2,6 +2,7 @@ import logging
 import sys
 from pathlib import Path
 
+
 def configure_logger(name: str, filepath: Path, level=logging.DEBUG) -> logging.Logger:
     """
     Configure a logger with both file and console handlers.
@@ -30,7 +31,7 @@ def configure_logger(name: str, filepath: Path, level=logging.DEBUG) -> logging.
     date_fmt = "%Y-%m-%d %H:%M:%S"
     formatter = logging.Formatter(fmt, datefmt=date_fmt)
 
-    file_handler = logging.FileHandler(filepath, encoding='utf-8')
+    file_handler = logging.FileHandler(filepath, encoding="utf-8")
     file_handler.setLevel(level)
     file_handler.setFormatter(formatter)
 
@@ -42,5 +43,5 @@ def configure_logger(name: str, filepath: Path, level=logging.DEBUG) -> logging.
     logger.addHandler(console_handler)
 
     logger.propagate = False
-    
+
     return logger

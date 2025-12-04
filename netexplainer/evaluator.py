@@ -15,7 +15,10 @@ from langchain.prompts import ChatPromptTemplate
 from langchain.agents import AgentExecutor
 from langchain_ollama import ChatOllama
 
-configure_logger(name="evaluator", filepath=Path(__file__).parent / "data/evaluation/netexplainer.log")
+configure_logger(
+    name="evaluator",
+    filepath=Path(__file__).parent / "data/evaluation/netexplainer.log",
+)
 logger = logging.getLogger("evaluator")
 QUESTIONS_PATH = "netexplainer/data/questions.yaml"
 
@@ -24,7 +27,10 @@ class Evaluator:
     """
     Class for evaluating the LLM
     """
-    def evaluate_subquestions(self, question: str, subquestions: list, dataset: Dataset) -> str:
+
+    def evaluate_subquestions(
+        self, question: str, subquestions: list, dataset: Dataset
+    ) -> str:
         """
         Evaluate the subquestions obtained from the LLM
 
@@ -53,14 +59,18 @@ class Evaluator:
                 | StrOutputParser()
             )
         else:
-            chain = (
-                prompt
-                | llm.llm
-                | StrOutputParser()
-            )
+            chain = prompt | llm.llm | StrOutputParser()
 
-        answer = chain.invoke({"question": question, "subquestions_LLM": subquestions, "subquestions": dataset.questions_subquestions[question]})
-        logger.debug(f"Question: {question}, Subquestions LLM: {subquestions}, Subquestions: {dataset.questions_subquestions[question]}, Similarity: {answer}")
+        answer = chain.invoke(
+            {
+                "question": question,
+                "subquestions_LLM": subquestions,
+                "subquestions": dataset.questions_subquestions[question],
+            }
+        )
+        logger.debug(
+            f"Question: {question}, Subquestions LLM: {subquestions}, Subquestions: {dataset.questions_subquestions[question]}, Similarity: {answer}"
+        )
         return answer
 
     def evaluate_answer(self, question: str, answer_llm: str, dataset: Dataset) -> str:
@@ -93,14 +103,18 @@ class Evaluator:
                 | StrOutputParser()
             )
         else:
-            chain = (
-                prompt
-                | llm.llm
-                | StrOutputParser()
-            )
+            chain = prompt | llm.llm | StrOutputParser()
 
-        answer = chain.invoke({"question": question, "answer_LLM": answer_llm, "answer": dataset.questions_answers[question]})
-        logger.debug(f"Question: {question}, Answer LLM: {answer_llm}, Answer: {dataset.questions_answers[question]}, Comparison: {answer}")
+        answer = chain.invoke(
+            {
+                "question": question,
+                "answer_LLM": answer_llm,
+                "answer": dataset.questions_answers[question],
+            }
+        )
+        logger.debug(
+            f"Question: {question}, Answer LLM: {answer_llm}, Answer: {dataset.questions_answers[question]}, Comparison: {answer}"
+        )
         return answer
 
     def evaluate(self, models_to_evaluate: list, tools: bool = False) -> None:
@@ -120,35 +134,50 @@ class Evaluator:
 
                 try:
                     logger.debug(f"Processing file: {file} with model: {model}")
-                    dataset = Dataset(os.path.join("netexplainer/data/cleaned/", file), QUESTIONS_PATH, models[f"{model}"][1])
+                    dataset = Dataset(
+                        os.path.join("netexplainer/data/cleaned/", file),
+                        QUESTIONS_PATH,
+                        models[f"{model}"][1],
+                    )
                     llm = models[f"{model}"][0](dataset.processed_file, tools=tools)
 
                     for question in dataset.questions_subquestions.keys():
-                        logger.debug(f"Processing question: {question} with model: {model}")
+                        logger.debug(
+                            f"Processing question: {question} with model: {model}"
+                        )
                         for _ in range(10):
-                            logger.debug(f"Attempting to process question: {question} with model: {model}, attempt: {_ + 1}")
+                            logger.debug(
+                                f"Attempting to process question: {question} with model: {model}, attempt: {_ + 1}"
+                            )
                             try:
                                 if dataset.divide_in_subquestions[question]:
                                     subquestions = llm.get_subquestions(question)
 
                                     answers = []
                                     for subquestion in subquestions:
-                                        if not isinstance(llm.llm, ChatOllama): time.sleep(2.5)
+                                        if not isinstance(llm.llm, ChatOllama):
+                                            time.sleep(2.5)
                                         answer = llm.answer_subquestion(subquestion)
                                         answers.append(answer)
 
-                                    if not isinstance(llm.llm, ChatOllama): time.sleep(2.5)
-                                    final_answer = llm.get_final_answer(question, subquestions, answers)
+                                    if not isinstance(llm.llm, ChatOllama):
+                                        time.sleep(2.5)
+                                    final_answer = llm.get_final_answer(
+                                        question, subquestions, answers
+                                    )
 
                                 else:
-                                    if not isinstance(llm.llm, ChatOllama): time.sleep(2.5)
+                                    if not isinstance(llm.llm, ChatOllama):
+                                        time.sleep(2.5)
                                     final_answer = llm.answer_subquestion(question)
 
                                 try:
                                     if dataset.divide_in_subquestions[question]:
-                                        #if not isinstance(llm.llm, ChatOllama): time.sleep(2)
+                                        # if not isinstance(llm.llm, ChatOllama): time.sleep(2)
                                         time.sleep(0.5)
-                                        subquestions_eval = self.evaluate_subquestions(question, subquestions, dataset)
+                                        subquestions_eval = self.evaluate_subquestions(
+                                            question, subquestions, dataset
+                                        )
                                     else:
                                         subquestions_eval = 100
                                 except Exception as e:
@@ -156,37 +185,52 @@ class Evaluator:
                                     subquestions_eval = "ERROR"
 
                                 try:
-                                    #if not isinstance(llm.llm, ChatOllama): time.sleep(2)
+                                    # if not isinstance(llm.llm, ChatOllama): time.sleep(2)
                                     time.sleep(0.5)
-                                    answers_eval = self.evaluate_answer(question, final_answer, dataset)
+                                    answers_eval = self.evaluate_answer(
+                                        question, final_answer, dataset
+                                    )
                                 except Exception as e:
                                     logger.error(f"Error evaluating answers: {e}")
                                     answers_eval = "PROBLEM"
 
-                                if subquestions_eval != "ERROR" and answers_eval != "PROBLEM":
+                                if (
+                                    subquestions_eval != "ERROR"
+                                    and answers_eval != "PROBLEM"
+                                ):
                                     break
 
                             except Exception as e:
-                                logger.error(f"Error processing question {question} in file {file}: {e}")
+                                logger.error(
+                                    f"Error processing question {question} in file {file}: {e}"
+                                )
                                 subquestions_eval = "ERROR"
                                 answers_eval = "PROBLEM"
                                 time.sleep(10)
 
-                        all_results.append({
-                            "model": model,
-                            "file": file,
-                            "question": question,
-                            "subquestions_eval": subquestions_eval,
-                            "answer_eval": answers_eval
-                        })
+                        all_results.append(
+                            {
+                                "model": model,
+                                "file": file,
+                                "question": question,
+                                "subquestions_eval": subquestions_eval,
+                                "answer_eval": answers_eval,
+                            }
+                        )
 
                         if tools:
-                            logger.info(f"Model: {model}_tools, File: {file}, Question: {question}, Subquestions Eval: {subquestions_eval}, Answer Eval: {answers_eval}")
+                            logger.info(
+                                f"Model: {model}_tools, File: {file}, Question: {question}, Subquestions Eval: {subquestions_eval}, Answer Eval: {answers_eval}"
+                            )
                         else:
-                            logger.info(f"Model: {model}, File: {file}, Question: {question}, Subquestions Eval: {subquestions_eval}, Answer Eval: {answers_eval}")
+                            logger.info(
+                                f"Model: {model}, File: {file}, Question: {question}, Subquestions Eval: {subquestions_eval}, Answer Eval: {answers_eval}"
+                            )
 
                 except Exception as e:
-                    logger.error(f"Error processing file {file} with model {model}: {e}")
+                    logger.error(
+                        f"Error processing file {file} with model {model}: {e}"
+                    )
                     time.sleep(10)
 
             logger.debug("Generating pie charts")
@@ -196,7 +240,9 @@ class Evaluator:
             logger.debug("Generating model subquestions charts")
             self.generate_model_subquestions_chart(all_results, tools)
 
-    def generate_model_subquestions_chart(self, results: list, tools: bool = False) -> None:
+    def generate_model_subquestions_chart(
+        self, results: list, tools: bool = False
+    ) -> None:
         """
         Generate radar charts for the subquestions similarity evaluation.
 
@@ -210,7 +256,11 @@ class Evaluator:
         for result in results:
             model = result["model"]
             question = result["question"]
-            sub_eval = result["subquestions_eval"].replace('%', '') if isinstance(result["subquestions_eval"], str) else result["subquestions_eval"]
+            sub_eval = (
+                result["subquestions_eval"].replace("%", "")
+                if isinstance(result["subquestions_eval"], str)
+                else result["subquestions_eval"]
+            )
 
             if not question or sub_eval == "ERROR":
                 continue
@@ -224,7 +274,9 @@ class Evaluator:
         for model, questions in model_data.items():
             sorted_questions = sorted(
                 questions.keys(),
-                key=lambda x: int(re.search(r'\d+', x).group()) if re.search(r'\d+', x) else 0
+                key=lambda x: int(re.search(r"\d+", x).group())
+                if re.search(r"\d+", x)
+                else 0,
             )
 
             avg_values = []
@@ -235,13 +287,15 @@ class Evaluator:
                 avg_values.append(round(avg, 2))
                 valid_questions.append("Question " + str(len(valid_questions) + 1))
 
-            fig = go.Figure(data=go.Scatterpolar(
-                r=avg_values,
-                theta=valid_questions,
-                fill='toself',
-                line=dict(color='royalblue'),
-                name="Similarity"
-            ))
+            fig = go.Figure(
+                data=go.Scatterpolar(
+                    r=avg_values,
+                    theta=valid_questions,
+                    fill="toself",
+                    line=dict(color="royalblue"),
+                    name="Similarity",
+                )
+            )
 
             if tools:
                 title = f"Subquestions similarity: {model} with tools"
@@ -251,16 +305,14 @@ class Evaluator:
             fig.update_layout(
                 polar=dict(
                     radialaxis=dict(
-                        visible=True,
-                        range=[0, 100],
-                        tickfont=dict(size=10)
+                        visible=True, range=[0, 100], tickfont=dict(size=10)
                     ),
-                    angularaxis=dict(tickfont=dict(size=12))
+                    angularaxis=dict(tickfont=dict(size=12)),
                 ),
                 title=title,
                 showlegend=True,
                 width=800,
-                height=600
+                height=600,
             )
 
             dir_path = ""
@@ -274,8 +326,12 @@ class Evaluator:
                 f.write(f"Model: {model}\n")
                 f.write(f"Subquestions similarity:\n")
                 for question in sorted_questions:
-                    f.write(f"{question}: {avg_values[sorted_questions.index(question)]}\n")
-                    logger.info(f"Model: {model}, Question: {question}, Similarity: {avg_values[sorted_questions.index(question)]}")
+                    f.write(
+                        f"{question}: {avg_values[sorted_questions.index(question)]}\n"
+                    )
+                    logger.info(
+                        f"Model: {model}, Question: {question}, Similarity: {avg_values[sorted_questions.index(question)]}"
+                    )
 
             fig.write_image(f"{dir_path}radar_subquestions_similarity.png")
 
@@ -285,20 +341,24 @@ class Evaluator:
         """
         from collections import defaultdict
 
-        model_question_data = defaultdict(lambda: defaultdict(lambda: {'YES': 0, 'NO': 0}))
+        model_question_data = defaultdict(
+            lambda: defaultdict(lambda: {"YES": 0, "NO": 0})
+        )
 
         for result in results:
             model = result["model"]
             question = result["question"]
             eval = result["answer_eval"]
 
-            if eval in ['YES', 'NO']:
+            if eval in ["YES", "NO"]:
                 model_question_data[model][question][eval] += 1
 
         for model, questions in model_question_data.items():
             sorted_questions = sorted(
                 questions.keys(),
-                key=lambda x: int(re.search(r'\d+', x).group()) if re.search(r'\d+', x) else 0
+                key=lambda x: int(re.search(r"\d+", x).group())
+                if re.search(r"\d+", x)
+                else 0,
             )
 
             yes_values = []
@@ -306,14 +366,26 @@ class Evaluator:
             q_labels = []
 
             for q in sorted_questions:
-                yes_values.append(questions[q]['YES'])
-                no_values.append(questions[q]['NO'])
+                yes_values.append(questions[q]["YES"])
+                no_values.append(questions[q]["NO"])
                 q_labels.append("Question " + str(len(q_labels) + 1))
 
-            fig = go.Figure(data=[
-                go.Bar(name='Correct (YES)', x=q_labels, y=yes_values, marker_color='#4CAF50'),
-                go.Bar(name='Incorrect (NO)', x=q_labels, y=no_values, marker_color='#F44336')
-            ])
+            fig = go.Figure(
+                data=[
+                    go.Bar(
+                        name="Correct (YES)",
+                        x=q_labels,
+                        y=yes_values,
+                        marker_color="#4CAF50",
+                    ),
+                    go.Bar(
+                        name="Incorrect (NO)",
+                        x=q_labels,
+                        y=no_values,
+                        marker_color="#F44336",
+                    ),
+                ]
+            )
 
             if tools:
                 title = f"Correct and incorrect answers by question: {model} with tools"
@@ -321,14 +393,14 @@ class Evaluator:
                 title = f"Correct and incorrect answers by question: {model}"
 
             fig.update_layout(
-                barmode='group',
+                barmode="group",
                 title=title,
                 xaxis_title="Questions",
                 yaxis_title="Count",
                 legend=dict(orientation="h", yanchor="bottom", y=1.02),
                 width=1200,
                 height=600,
-                margin=dict(t=60)
+                margin=dict(t=60),
             )
 
             dir_path = ""
@@ -342,8 +414,12 @@ class Evaluator:
                 f.write(f"Model: {model}\n")
                 f.write(f"Correct and incorrect answers:\n")
                 for question in sorted_questions:
-                    f.write(f"{question}: Correct: {questions[question]['YES']}, Incorrect: {questions[question]['NO']}\n")
-                    logger.info(f"Model: {model}, Question: {question}, Correct: {questions[question]['YES']}, Incorrect: {questions[question]['NO']}")
+                    f.write(
+                        f"{question}: Correct: {questions[question]['YES']}, Incorrect: {questions[question]['NO']}\n"
+                    )
+                    logger.info(
+                        f"Model: {model}, Question: {question}, Correct: {questions[question]['YES']}, Incorrect: {questions[question]['NO']}"
+                    )
 
             fig.write_image(f"{dir_path}grouped_bar_answers.png")
 
@@ -361,11 +437,13 @@ class Evaluator:
             model_data[result["model"]].append(result["answer_eval"])
 
         for model, evaluations in model_data.items():
-            counts = OrderedDict([
-                ("Correct (YES)", 0),
-                ("Incorrect (NO)", 0),
-                ("Problematic (PROBLEM)", 0)
-            ])
+            counts = OrderedDict(
+                [
+                    ("Correct (YES)", 0),
+                    ("Incorrect (NO)", 0),
+                    ("Problematic (PROBLEM)", 0),
+                ]
+            )
 
             for eval in evaluations:
                 if eval == "YES":
@@ -380,7 +458,7 @@ class Evaluator:
                 continue
 
             labels = list(counts.keys())
-            values = [round((count/total)*100, 2) for count in counts.values()]
+            values = [round((count / total) * 100, 2) for count in counts.values()]
 
             if tools:
                 title = f"Correct and incorrect answers: {model} with tools"
@@ -391,7 +469,7 @@ class Evaluator:
                 names=labels,
                 values=values,
                 title=title,
-                color_discrete_sequence=px.colors.qualitative.Pastel
+                color_discrete_sequence=px.colors.qualitative.Pastel,
             )
 
             dir_path = ""
