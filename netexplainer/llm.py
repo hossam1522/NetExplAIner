@@ -550,6 +550,36 @@ class LLM_DEEPSEEK_R1(LLM):
             logger.debug("Using DeepSeek-R1 LLM using Ollama without tools")
 
 
+class LLM_COGITO(LLM):
+    """
+    Class for Cogito LLM using Ollama
+    """
+
+    def __init__(self, data_path: str, tools: bool = False):
+        """
+        Initialize the LLM object with the file provided
+        Args:
+            data_path (str): The path of the file to process
+        """
+        super().__init__(data_path)
+
+        self.model = "cogito:8b"
+        self.tools = tools
+
+        llm = ChatOllama(
+            model=self.model,
+            num_ctx=32000,
+            reasoning=True,
+        )
+
+        self.llm = llm
+        if tools:
+            self.llm_with_tools = llm.bind_tools(tools=[calculator])
+            logger.debug("Using Cogito LLM using Ollama with tools")
+        else:
+            logger.debug("Using Cogito LLM using Ollama without tools")
+
+
 """
 This dictionary maps model names to their respective LLM classes and
 if windows context size is small or big.
@@ -567,4 +597,5 @@ models = {
     "gpt-oss-20b": (LLM_GPT_OSS, "big"),
     "aya-expanse-8b": (LLM_AYA_EXPANSE, "small"),
     "deepseek-r1-8b": (LLM_DEEPSEEK_R1, "big"),
+    "cogito-8b": (LLM_COGITO, "big"),
 }
