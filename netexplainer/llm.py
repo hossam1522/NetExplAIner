@@ -229,9 +229,9 @@ class LLM_GEMINI(LLM):
             logger.debug("Using Gemini 2.0 Flash LLM without tools")
 
 
-class LLM_QWEN_2_5_7B(LLM):
+class LLM_QWEN_2_5_32B(LLM):
     """
-    Class for Qwen2.5 7B LLM
+    Class for Qwen2.5 32B LLM
     """
 
     def __init__(self, data_path: str, tools: bool = False):
@@ -242,7 +242,7 @@ class LLM_QWEN_2_5_7B(LLM):
         """
         super().__init__(data_path)
 
-        self.model = "qwen2.5:72b"
+        self.model = "qwen2.5:32b"
         self.tools = tools
 
         llm = ChatOllama(
@@ -253,9 +253,9 @@ class LLM_QWEN_2_5_7B(LLM):
         self.llm = llm
         if tools:
             self.llm_with_tools = llm.bind_tools(tools=[calculator])
-            logger.debug("Using Qwen2.5 7B LLM with tools")
+            logger.debug("Using Qwen2.5 32B LLM with tools")
         else:
-            logger.debug("Using Qwen2.5 7B LLM without tools")
+            logger.debug("Using Qwen2.5 32B LLM without tools")
 
 
 class LLM_GEMMA_3(LLM):
@@ -586,7 +586,7 @@ if windows context size is small or big.
 """
 models = {
     "gemini-2.0-flash": (LLM_GEMINI, "big"),
-    "qwen2.5-7b": (LLM_QWEN_2_5_7B, "big"),
+    "qwen2.5-32b": (LLM_QWEN_2_5_32B, "big"),
     "gemma-3-27b": (LLM_GEMMA_3, "big"),
     "llama2-7b": (LLM_LLAMA2_7B, "small"),
     "mistral-7b": (LLM_MISTRAL_7B, "big"),
