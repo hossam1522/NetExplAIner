@@ -418,7 +418,7 @@ class LLM_PHI4(LLM):
         """
         super().__init__(data_path)
 
-        self.model = "phi4"
+        self.model = "phi4:14b-fp16"
         self.tools = tools
 
         llm = ChatOllama(
