@@ -54,10 +54,7 @@ The idea consists of investigating the improvement (or not) of the approach of d
 ### Dataset Reproduction
 To reproduce the exact dataset used in the paper:
 1. The file `urls.txt` contains the raw list of source files from the Wireshark Wiki.
-2. Run the scraper with the filtering flag to download and keep only traces with $\le$ 128 packets:
-   ```bash
-   python -m netexplainer --download-data
-   python -m netexplainer --clean-data 128
+2. Run the scraper by following the steps 6 and 7 of the "How to use" section.
 
 ## Mixed Strategy Configuration
 
