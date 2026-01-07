@@ -7,7 +7,9 @@ from netexplainer.scraper import Scraper
 from netexplainer.logger import configure_logger
 from netexplainer.evaluator import Evaluator, QUESTIONS_PATH
 
-configure_logger(name="main", filepath=Path(__file__).parent / "data/evaluation/netexplainer.log")
+configure_logger(
+    name="main", filepath=Path(__file__).parent / "data/evaluation/netexplainer.log"
+)
 logger = logging.getLogger("main")
 
 
@@ -15,8 +17,17 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
 
     group = parser.add_mutually_exclusive_group()
-    group.add_argument("--download-data", action="store_true", help="Download network files from Wireshark samples")
-    group.add_argument("--clean-data", type=int, metavar="<N>", help="Keep network files with a maximum of N packets")
+    group.add_argument(
+        "--download-data",
+        action="store_true",
+        help="Download network files from Wireshark samples",
+    )
+    group.add_argument(
+        "--clean-data",
+        type=int,
+        metavar="<N>",
+        help="Keep network files with a maximum of N packets",
+    )
 
     args = parser.parse_args()
 
@@ -32,13 +43,13 @@ if __name__ == "__main__":
         logger.debug(f"Cleaned network files, keeping only {max_packets} packets")
         sys.exit(0)
 
-    with open(QUESTIONS_PATH, 'r') as file:
+    with open(QUESTIONS_PATH, "r") as file:
         data = yaml.safe_load(file)
         logger.debug(f"Loaded questions from {QUESTIONS_PATH}")
-        models_to_evaluate = data['models']
+        models_to_evaluate = data["models"]
         logger.debug(f"Models to evaluate: {models_to_evaluate}")
 
     evaluator = Evaluator()
 
     evaluator.evaluate(models_to_evaluate=models_to_evaluate, tools=False)
-    evaluator.evaluate(models_to_evaluate=models_to_evaluate, tools=True)
+    # evaluator.evaluate(models_to_evaluate=models_to_evaluate, tools=True)

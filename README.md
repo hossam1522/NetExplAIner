@@ -49,6 +49,26 @@ The idea consists of investigating the improvement (or not) of the approach of d
    make run
    ```
 
+## Reproducibility
+
+### Dataset Reproduction
+To reproduce the exact dataset used in the paper:
+1. The file `urls.txt` contains the raw list of source files from the Wireshark Wiki.
+2. Run the scraper by following the steps 6 and 7 of the "How to use" section.
+
+## Mixed Strategy Configuration
+
+To reproduce the "Mixed Strategy" results (the best performing configuration presented in the paper), you must configure the gating mechanism to disable decomposition for simple retrieval queries (Q1, Q2, Q4).
+
+1. Edit the `netexplainer/data/questions.yaml` file.
+2. Set `divide_in_subquestions: False` for the following questions:
+   - "What is the total number of packets in the trace?"
+   - "How many unique communicators are present in the trace?"
+   - "What is the total size of transmitted bytes?"
+3. Run the evaluation normally.
+
+For the standard "Full Decomposition" strategy, leave all values as `True` (default).
+
 ## Unit testing
 To check the correct functioning of the project without the need to install all dependencies, a Docker container has been created to perform all the processes and check the unit tests located in the `tests/` folder.
 

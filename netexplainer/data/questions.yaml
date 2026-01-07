@@ -1,6 +1,6 @@
 models:
-  - "llama2-7b"
-  - "mistral-7b"
+  - "phi4"
+  # - "<model_to_test>"
 
 questions:
   - question: "What is the total number of packets in the trace?"
