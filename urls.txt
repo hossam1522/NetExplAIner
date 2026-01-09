@@ -85,7 +85,6 @@ https://wiki.wireshark.org/uploads/__moin_import__/attachments/SampleCaptures/IG
 https://wiki.wireshark.org/uploads/__moin_import__/attachments/SampleCaptures/KasperskyPackets.CAP
 https://wiki.wireshark.org/uploads/__moin_import__/attachments/SampleCaptures/MCPE-0.15.pcapng
 https://wiki.wireshark.org/uploads/__moin_import__/attachments/SampleCaptures/MGCP.pcap
-https://wiki.wireshark.org/uploads/__moin_import__/attachments/SampleCaptures/MagicJack-_pwr_up.pcap
 https://wiki.wireshark.org/uploads/__moin_import__/attachments/SampleCaptures/MagicJack-_short_call.pcap
 https://wiki.wireshark.org/uploads/__moin_import__/attachments/SampleCaptures/Manolito2.cap
 https://wiki.wireshark.org/uploads/__moin_import__/attachments/SampleCaptures/MicrosoftNTP.cap
