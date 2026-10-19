@@ -1,7 +1,9 @@
-import pytest
-from pathlib import Path
-import tempfile
 import logging
+import tempfile
+from pathlib import Path
+
+import pytest
+
 
 @pytest.fixture(autouse=True)
 def configure_logger():
@@ -24,3 +26,32 @@ def configure_logger():
         logger.propagate = False
 
         yield
+
+
+class FakeChatModel:
+    """Minimal stand-in for a LangChain chat model.
+
+    ``responder(messages) -> AIMessage | str`` decides each reply; the prompts
+    received are stored in ``calls``.
+    """
+
+    def __init__(self, responder):
+        self.responder = responder
+        self.calls = []
+        self.bound_tools = None
+
+    def bind_tools(self, tools):
+        self.bound_tools = tools
+        return self
+
+    def invoke(self, messages):
+        from langchain_core.messages import AIMessage
+
+        self.calls.append(list(messages))
+        reply = self.responder(messages)
+        return reply if isinstance(reply, AIMessage) else AIMessage(content=reply)
+
+
+@pytest.fixture
+def fake_chat_model():
+    return FakeChatModel
