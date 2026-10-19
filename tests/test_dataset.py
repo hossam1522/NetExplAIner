@@ -1,7 +1,9 @@
-import unittest
 import os
-from unittest.mock import patch, mock_open, MagicMock
+import unittest
+from unittest.mock import MagicMock, mock_open, patch
+
 from netexplainer.dataset import Dataset
+
 
 class TestDataset(unittest.TestCase):
     @patch("netexplainer.dataset.check_output")
@@ -35,9 +37,11 @@ class TestDataset(unittest.TestCase):
     def test_process_file(self, mock_file, mock_check_output):
         processed_path = self.dataset._Dataset__process_file("dummy.pcap", "big")
         self.assertTrue(processed_path.endswith(".txt"))
-        mock_file.assert_called_once_with(processed_path, 'w')
+        mock_file.assert_called_once_with(processed_path, "w")
         handle = mock_file()
-        handle.write.assert_any_call("No.|Time|Source|Destination|Protocol|Length|Info\n")
+        handle.write.assert_any_call(
+            "No.|Time|Source|Destination|Protocol|Length|Info\n"
+        )
         handle.write.assert_any_call("Mocked Data\n")
 
     def test_clean_cap_format(self):
@@ -55,5 +59,6 @@ class TestDataset(unittest.TestCase):
         with self.assertRaises(FileNotFoundError):
             Dataset("dummy.pcap", "missing.yaml", "big")
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     unittest.main()
