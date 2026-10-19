@@ -5,88 +5,163 @@ Using LLMs to analyze network traces by decomposing queries into manageable step
 
 The idea consists of investigating the improvement (or not) of the approach of dividing complex questions into manageable steps and providing the LLM model with an external mathematical tool to supply the areas where the LLMs are weaker, like doing math.
 
-## How to use
+## Method
 
-1. Clone the repository.
-2. Install `uv`:
-   ```
-   make install-uv
-   ```
-3. Modify the `netexplainer/data/questions.yaml` file by indicating what models you want to evaluate (the available models are located in `netexplainer/llm.py` at the end of the file, in the `models` structure) and if you want questions to be divided or not. Feel free to modify the subquestions that will be compared to. For example:
-   ```yaml
-    models:
-      - "llama2-7b"
-      - "mistral-7b"
-    
-    questions:
-      - question: "What is the total number of packets in the trace?"
-        divide_in_subquestions: True
-        subquestions:
-          - "What is the first packet number?"
-          - "What is the last packet number?"
-    
-      - question: "How many unique communicators are present in the trace?"
-        divide_in_subquestions: False
-        subquestions:
-          - "How many unique source IPs are there?"
-          - "How many unique destination IPs are there?"
-          - "Are there any IPs that are both source and destination?"
-     ...
-   ```
-4. If you want to test another model not contemplated in the existing ones, feel free to modify and add the models you want, following the same format as the other models. You can use models by their API (like Gemini ones) or local models deployed by Ollama. You must indicate the LLM function to use and whether the context window is small or big.
-5. If you want to modify the questions of the `netexplainer/data/questions.yaml` file, you should add the new questions and a way to answer them in the `netexplainer/llm.py` file. More specifically, you should add that information to the `__answer_question` function.
-6. If you have some network traces to evaluate, put them in a folder called `raw/` located in `netexplainer/data/`. If not, you can download network traces from the [Wireshark Wiki](https://wiki.wireshark.org/samplecaptures) using the following command:
-   ```
+For a question `q` about a trace `T` (rendered as text with `tshark`):
+
+1. **Decomposition**: the LLM generates at most 3 sub-questions `q_1..q_k` (prompt `DECOMPOSITION`).
+2. **Answering**: each `q_i` is answered by the LLM looking at the trace: `a_i = LLM(q_i, T)` (prompt `ANSWER`).
+3. **Aggregation `g`**: the final answer is synthesized from the question and the pairs only, without the trace: `a = g(q, {(q_i, a_i)})` (prompt `AGGREGATION`, `Pipeline.aggregate` in `netexplainer/llm/pipeline.py`; called `get_final_answer` in earlier versions). The pairs are formatted as `Question i: q_i / Answer i: a_i`.
+4. **Judge**: an LLM judge (Gemma 3 27B by default, temperature 0) says whether `a` is almost correct compared with the ground truth computed with scapy (`YES`/`NO`), and scores the similarity (0-100) between the generated and the reference sub-questions of `questions.yaml`.
+
+With **tools**, the calculator (`numexpr`) is bound to every LLM call and the model may call it any number of times before answering.
+
+All prompts live in `netexplainer/llm/prompts.py`; a test checks that the ones used in the paper are unchanged.
+
+### Strategies (`--strategy`)
+
+| Strategy | What it does |
+|---|---|
+| `direct` | answer `q` directly over the trace (no decomposition) |
+| `decomp` | full decomposition: steps 1-3 for every question |
+| `decomp_tools` | `decomp` with the calculator tool (same as `decomp --tools`) |
+| `mixed` | decomposition gated per question: questions in `--direct-questions` (default `1,2,4`: total packets, unique communicators, total bytes) are answered directly, the rest are decomposed. Best configuration of the paper |
+| `cot` | chain-of-thought baseline (new, not in the paper): direct answer asking to think step by step |
+| `react` | placeholder, not implemented |
+
+## Installation
+
+Requirements: Python >= 3.10, [`uv`](https://docs.astral.sh/uv/), `tshark`/`editcap` (Wireshark CLI) and, for local models, [Ollama](https://ollama.com) or an OpenAI-compatible server such as [vLLM](https://docs.vllm.ai).
+
+```bash
+make install-uv   # if uv is not installed
+make install      # uv sync: exact versions from uv.lock
+```
+
+API keys go in a `.env` file (never commit it): `GOOGLE_API_KEY` for Gemini/Gemma (default judge), `OPENAI_API_KEY` for OpenAI-compatible servers that require one (vLLM accepts any value).
+
+Optional plots: `uv sync --extra plots`.
+
+## Data
+
+1. Download the captures from the [Wireshark Wiki](https://wiki.wireshark.org/samplecaptures) into `netexplainer/data/raw/`:
+   ```bash
    make download-data
    ```
-7. If you want to filter the network traces to a maximum number of packets per trace, you can indicate it with:
+2. Keep the captures with at most `N` packets in `netexplainer/data/cleaned/`:
+   ```bash
+   make clean-data N=<N>
    ```
-   make clean-data <N>
-   ```
-   Where `<N>` is the maximum number of traces. The filtered traces will be saved in the `netexplainer/data/cleaned` folder. If you don't want to filter, simply change the `raw/` folder name to `cleaned/`.
-8. Finally, once you have all configured properly, execute the program by doing:
-   ```
-   make run
-   ```
+   If you do not want to filter, rename `raw/` to `cleaned/`.
 
-## Reproducibility
+`urls.txt` lists the source files used in the paper and `hashes.txt` the SHA-256 of each of them (note that `download-data` converts `.cap` files to `.pcap`).
 
-### Dataset Reproduction
-To reproduce the exact dataset used in the paper:
-1. The file `urls.txt` contains the raw list of source files from the Wireshark Wiki.
-2. Run the scraper by following the steps 6 and 7 of the "How to use" section.
+Questions, reference sub-questions and the default models are in `netexplainer/data/questions.yaml`. A new question also needs its ground truth in `Dataset.__answer_question` (`netexplainer/dataset.py`).
 
-## Mixed Strategy Configuration
+## Running
 
-To reproduce the "Mixed Strategy" results (the best performing configuration presented in the paper), you must configure the gating mechanism to disable decomposition for simple retrieval queries (Q1, Q2, Q4).
-
-1. Edit the `netexplainer/data/questions.yaml` file.
-2. Set `divide_in_subquestions: False` for the following questions:
-   - "What is the total number of packets in the trace?"
-   - "How many unique communicators are present in the trace?"
-   - "What is the total size of transmitted bytes?"
-3. Run the evaluation normally.
-
-For the standard "Full Decomposition" strategy, leave all values as `True` (default).
-
-## Unit testing
-To check the correct functioning of the project without the need to install all dependencies, a Docker container has been created to perform all the processes and check the unit tests located in the `tests/` folder.
-
-To build and run the container locally, you can use the following command:
 ```bash
-docker build -t netexplainer . && docker run -u 1001 -t -v "$(pwd):/app/test" netexplainer
+uv run python -m netexplainer run --help      # or: make run ARGS="..."
 ```
 
-In case of not want to build the image locally, you can pull and run the image directly from [DockerHub](https://hub.docker.com/repository/docker/hossam1522/netexplainer/general) by using the following command:
+Examples:
+
 ```bash
-docker run -u 1001 -t -v "$(pwd):/app/test" hossam1522/netexplainer
+# Paper setting: full decomposition, phi4 on Ollama, judge Gemma 3 27B (Google API)
+uv run python -m netexplainer run --models phi4 --strategy decomp
+
+# Mixed strategy, with and without tools (tool ablation), two models
+uv run python -m netexplainer run --models phi4 qwen2.5-32b --strategy mixed --tool-ablation
+
+# Every strategy of the paper at once
+uv run python -m netexplainer run --models phi4 --strategy direct decomp mixed --tool-ablation
+
+# Decomposition + tools, custom mixed gating
+uv run python -m netexplainer run --models phi4 --strategy decomp_tools
+uv run python -m netexplainer run --models phi4 --strategy mixed --direct-questions 1,2,4,5
+
+# vLLM (OpenAI-compatible) model with explicit sampling and a local judge
+uv run python -m netexplainer run --backend openai --base-url http://localhost:8000/v1 \
+    --models Qwen/Qwen2.5-32B-Instruct --temperature 0 --seed 42 \
+    --judge-backend openai --judge-base-url http://localhost:8001/v1 \
+    --judge-model google/gemma-3-27b-it
+
+# Quick test on 3 traces, resuming an interrupted run
+uv run python -m netexplainer run --models phi4 --max-files 3 --output-dir results/test --resume
 ```
 
-If you want to test the code without using Docker, you should execute the following commands to install `uv` and then test:
-```
-make install-uv && make test
+Models: `--models` accepts the aliases of the paper (`netexplainer/llm/models.py`: `gemini-2.0-flash`, `gemma-3-27b`, `qwen2.5-32b`, `llama2-7b`, `mistral-7b`, `llama3.1-8b`, `gemma-3-12b-ollama`, `granite3.3-8b`, `phi4`, `gpt-oss-20b`, `aya-expanse-8b`, `deepseek-r1-8b`, `cogito-8b`), which fix the backend, model name and context window used in the paper, or any other model name, served by `--backend` (`ollama`, `openai`, `google`) at `--base-url`.
+
+Generation parameters (`--temperature`, `--top-p`, `--top-k`, `--seed`, `--num-ctx`, `--max-tokens`) are only sent when given. By default nothing is sent, which reproduces the paper: Ollama defaults (temperature 0.8, top_p 0.9, top_k 40, unless the model's Modelfile overrides them), temperature 0 for the Google models, and the per-model `num_ctx` of the registry. For vLLM the context length is set when starting the server (`--max-model-len`).
+
+Each question is retried up to `--max-attempts` (default 10) times until the pipeline and the judge calls succeed. Traces are processed in sorted order.
+
+## Results format
+
+`run` appends one JSON object per (model, strategy, tools, trace, question) to `<output-dir>/results.jsonl` (default `results/`). The log goes to `netexplainer/data/evaluation/netexplainer.log` (`--log-file`).
+
+| Field | Description |
+|---|---|
+| `run_id`, `timestamp`, `netexplainer_version`, `git_commit`, `schema_version` | provenance |
+| `model`, `model_name`, `backend` | alias, backend model name and backend |
+| `strategy`, `tools`, `condition` | strategy, calculator on/off, and `strategy[+tools]` |
+| `file`, `question_index`, `question` | trace and question (1-based index in `questions.yaml`) |
+| `decomposed` | whether the question was decomposed |
+| `subquestions`, `intermediate_answers` | generated `q_i` and their answers `a_i` |
+| `final_answer`, `ground_truth`, `reference_subquestions` | final answer `a`, scapy ground truth, reference sub-questions |
+| `judge_model`, `judge_raw`, `verdict`, `correct` | judge output, normalized `YES`/`NO`/`PROBLEM`, `true`/`false`/`null` |
+| `subq_similarity_raw`, `subq_similarity` | judge similarity of the sub-questions (0-100, `null` if not decomposed) |
+| `attempts`, `errors` | attempts used and error messages of failed attempts |
+| `llm_calls`, `tokens_in`, `tokens_out`, `latency_s`, `tool_calls` | usage of the last attempt (tokens as reported by the backend) |
+| `seed`, `generation_params` | generation parameters actually sent (`null` = backend default) |
+
+## Analysis
+
+```bash
+uv run python -m netexplainer analyze results/results.jsonl --by-question
+# or: uv run python scripts/analyze.py results/results.jsonl
 ```
 
-### Additional notes
+It prints (markdown, or `--json`):
 
-- [LICENSE](LICENSE)
+- accuracy per model and condition (and per question with `--by-question`) with 95% Wilson intervals; `PROBLEM` (judge or pipeline failure) counts as incorrect and is reported in `problems`;
+- mean sub-question similarity of decomposed questions;
+- exact McNemar tests between every pair of conditions of the same model, paired on (trace, question).
+
+`--plots DIR` writes the pie, bar and radar charts of the paper (needs the `plots` extra).
+
+### Re-analyzing the original logs
+
+Runs made before this version only left lines such as `Model: phi4_tools, File: f.pcap, Question: ..., Subquestions Eval: 80, Answer Eval: YES` in `netexplainer.log`. They can be converted to the same format (fields not logged are `null`; the strategy is not in the log, so it must be given):
+
+```bash
+uv run python -m netexplainer convert-log old/netexplainer.log -o legacy.jsonl --strategy mixed
+uv run python -m netexplainer analyze legacy.jsonl
+# or directly: uv run python -m netexplainer analyze old.log --legacy-strategy decomp
+```
+
+In the old logs non-decomposed questions were logged with `Subquestions Eval: 100`; they are converted to `subq_similarity: null`.
+
+## Development
+
+```bash
+make test     # pytest (LLMs are mocked: no Ollama, GPU or API keys needed)
+make lint     # ruff check + format check
+make format
+```
+
+Code layout:
+
+```
+netexplainer/
+  cli.py            command line (run, analyze, convert-log, download-data, clean-data)
+  dataset.py        pcap -> text with tshark, ground truth with scapy
+  scraper.py        Wireshark wiki download and filtering
+  llm/              prompts, backends, model registry, tools, LLM client, strategies
+  evaluation/       experiment runner, judge, JSONL records, metrics, analysis, plots
+scripts/analyze.py  wrapper of `netexplainer analyze`
+```
+
+## License
+
+[LICENSE](LICENSE)
