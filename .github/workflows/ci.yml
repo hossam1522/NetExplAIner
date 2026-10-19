@@ -2,6 +2,7 @@ name: ci
 
 on:
   push:
+  pull_request:
 
 jobs:
   test:
@@ -20,6 +21,9 @@ jobs:
 
       - name: Install UV
         run: make install-uv
+
+      - name: Lint
+        run: make lint
 
       - name: Run tests
         run: make test
