@@ -1,17 +1,13 @@
-import os
-import subprocess
-import re
-import requests
-import shutil
 import logging
-from pathlib import Path
-from scapy.all import rdpcap
-from netexplainer.logger import configure_logger
+import os
+import re
+import shutil
+import subprocess
 
-configure_logger(
-    name="scraper", filepath=Path(__file__).parent / "data/evaluation/netexplainer.log"
-)
-logger = logging.getLogger("scraper")
+import requests
+from scapy.all import rdpcap
+
+logger = logging.getLogger(__name__)
 DATASET_PATH = os.path.join(os.getcwd(), "netexplainer/data/raw")
 CLEANED_PATH = os.path.join(os.getcwd(), "netexplainer/data/cleaned")
 

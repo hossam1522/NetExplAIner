@@ -1,16 +1,12 @@
-from scapy.all import rdpcap
-import os
-from subprocess import check_output
-import re
-import yaml
 import logging
-from pathlib import Path
-from netexplainer.logger import configure_logger
+import os
+import re
+from subprocess import check_output
 
-configure_logger(
-    name="dataset", filepath=Path(__file__).parent / "data/evaluation/netexplainer.log"
-)
-logger = logging.getLogger("dataset")
+import yaml
+from scapy.all import rdpcap
+
+logger = logging.getLogger(__name__)
 
 
 class Dataset:
@@ -65,18 +61,13 @@ class Dataset:
         else:
             self.__questions_path = os.path.abspath(questions_path)
 
-        with open(self.__questions_path, "r") as file:
+        with open(self.__questions_path) as file:
             data = yaml.safe_load(file)
 
-        self.questions_subquestions = {}
-        self.divide_in_subquestions = {}
-
-        for item in data["questions"]:
-            question = item["question"]
-            subquestions = item["subquestions"]
-            divide_in_subquestions = item.get("divide_in_subquestions", True)
-            self.questions_subquestions[question] = subquestions
-            self.divide_in_subquestions[question] = divide_in_subquestions
+        # Ordered as in the questions file (question index = position + 1).
+        self.questions_subquestions = {
+            item["question"]: item["subquestions"] for item in data["questions"]
+        }
 
         self.questions_answers = self.__answer_question(self.__path)
         self.processed_file = self.__process_file(self.__path, windows_context_size)
@@ -134,7 +125,7 @@ class Dataset:
             return self.__clean_cap_format(out.decode("utf-8"), windows_context_size)
         except Exception as e:
             logger.error(f"Error converting file {file} to string: {e}")
-            raise Exception(f"Fail reading the file. ERROR: {e}")
+            raise Exception(f"Fail reading the file. ERROR: {e}") from e
 
     def __clean_cap_format(self, cap: str, windows_context_size: str) -> str:
         """
@@ -147,7 +138,7 @@ class Dataset:
         Returns:
             str: The cleaned capture
         """
-        logger.debug(f"Cleaning capture format")
+        logger.debug("Cleaning capture format")
         # Split the string by lines
         cap_lines = cap.strip().split("\n")
 
@@ -177,7 +168,7 @@ class Dataset:
         for row in table_rows:
             cap_formated += " | ".join(row) + "\n"
 
-        logger.debug(f"Capture format cleaned")
+        logger.debug("Capture format cleaned")
         return cap_formated
 
     def __answer_question(self, file_path: str) -> dict:
