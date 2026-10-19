@@ -1,36 +1,58 @@
 [build-system]
-requires = ["setuptools", "wheel"]
+requires = ["setuptools>=61", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "netexplainer"
-version = "0.1.0"
+version = "0.2.0"
 description = "Using LLMs to analyze network traces by decomposing queries in manageable steps."
 authors = [
     { name = "Hossam", email = "hossam@correo.ugr.es" }
 ]
 dependencies = [
     "scapy",
-    "pytest",
-    "langchain",
-    "langchain_google_genai",
-    "langchain_community",
-    "langchain_core",
-    "chromadb",
+    "pyyaml",
+    "requests",
+    "python-dotenv",
     "numexpr",
-    "pandas",
-    "plotly",
-    "kaleido",
-    "langchain-ollama"
+    "langchain_core",
+    "langchain_google_genai",
+    "langchain-ollama",
+    "langchain-openai>=0.3,<0.4",
 ]
 requires-python = ">=3.10"
 readme = "README.md"
 
-[tool.distutils.egg_info]
-egg_base = "/tmp"
+[project.optional-dependencies]
+# Only needed for `netexplainer analyze --plots`.
+plots = ["plotly", "kaleido", "pandas<3"]  # plotly.express needs pandas
 
-[tool.setuptools]
-py-modules = []
+[project.scripts]
+netexplainer = "netexplainer.cli:main"
+
+[dependency-groups]
+dev = ["pytest", "ruff"]
+
+[tool.setuptools.packages.find]
+include = ["netexplainer*"]
+
+[tool.setuptools.package-data]
+netexplainer = ["data/questions.yaml"]
 
 [tool.uv]
-constraint-dependencies = ["kaleido!=0.2.1.post1"]
+# langchain-core is kept at the version used for the paper experiments.
+constraint-dependencies = ["kaleido!=0.2.1.post1", "langchain-core==0.3.45"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 88
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP"]
+# E501: prompts used in the paper are long literal strings; keep them verbatim.
+# B008: GenerationParams() defaults are frozen (immutable) dataclasses.
+# B905: zip(strict=True) would change behaviour on lists of different length.
+ignore = ["E501", "B008", "B905"]
