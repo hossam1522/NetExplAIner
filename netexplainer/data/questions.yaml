@@ -55,3 +55,42 @@ questions:
     subquestions:
       - "How much data is sent in bytes in the trace?"
       - "What is the total duration in seconds?"
+
+# Extended set (--question-set extended|all): more realistic questions with an
+# exact ground truth computed by netexplainer/ground_truth.py. Q10-Q15 keep
+# their index whichever set is selected. A question that does not apply to a
+# trace (e.g. DNS without DNS traffic) is skipped for that trace. The question
+# text must match the constants of ground_truth.py. They need the Info column
+# of the trace (context "big") to see ports and TCP flags.
+extended_questions:
+  - question: "Which TCP/UDP destination port receives the most packets in the trace?"
+    subquestions:
+      - "How many packets are sent to each destination port?"
+      - "Which destination port has the highest count?"
+
+  - question: "How many distinct source IPs send TCP SYN packets without the ACK flag?"
+    subquestions:
+      - "Which packets are TCP SYN packets without the ACK flag?"
+      - "What are the source IPs of those packets?"
+      - "How many distinct source IPs are there among them?"
+
+  - question: "How many DNS queries (requests to UDP port 53) are in the trace?"
+    subquestions:
+      - "Which packets are DNS packets sent to UDP port 53?"
+      - "How many of them are queries (not responses)?"
+
+  - question: "Which IP address sends the most bytes in the trace?"
+    subquestions:
+      - "How many bytes does each source IP send in total?"
+      - "Which source IP has the highest total?"
+
+  - question: "Does any host send packets to more than 10 distinct TCP/UDP destination ports (possible port scan)? Give its IP address (all of them separated by ' or ' if there are several) or 'none'."
+    subquestions:
+      - "How many distinct destination ports does each source IP contact?"
+      - "Is any of these counts greater than 10?"
+      - "Which source IP has that count?"
+
+  - question: "How many TCP packets have the RST flag set?"
+    subquestions:
+      - "Which packets are TCP packets?"
+      - "Which of them have the RST flag set?"

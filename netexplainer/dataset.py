@@ -6,11 +6,21 @@ from subprocess import check_output
 import yaml
 from scapy.all import rdpcap
 
+from netexplainer.ground_truth import EXTENDED, core_answer
+
+QUESTION_SETS = ("core", "extended", "all")
+
 logger = logging.getLogger(__name__)
 
 
 class Dataset:
-    def __init__(self, file_path: str, questions_path: str, windows_context_size: str):
+    def __init__(
+        self,
+        file_path: str,
+        questions_path: str,
+        windows_context_size: str,
+        question_set: str = "core",
+    ):
         """
         Initialize the dataset object with the file provided
 
@@ -18,7 +28,11 @@ class Dataset:
             file_path (str): The path of the file to process
             questions_path (str): The path of the questions file
             windows_context_size (str): The size of the context window of the LLM
+            question_set (str): ``core`` (questions of the paper), ``extended``
+                (``extended_questions`` of the file) or ``all``
         """
+        if question_set not in QUESTION_SETS:
+            raise ValueError(f"question_set must be one of {QUESTION_SETS}")
         if not os.path.exists(file_path):
             logger.error(f"The path {file_path} does not exist")
             raise FileNotFoundError(f"The path {file_path} does not exist")
@@ -64,12 +78,26 @@ class Dataset:
         with open(self.__questions_path) as file:
             data = yaml.safe_load(file)
 
-        # Ordered as in the questions file (question index = position + 1).
+        # Question index = 1-based position in core + extended questions, so
+        # Q10..Q15 keep their index whichever set is selected.
+        items = data["questions"] + data.get("extended_questions", [])
+        n_core = len(data["questions"])
+        selected = [
+            (i, item)
+            for i, item in enumerate(items, start=1)
+            if question_set == "all" or (i > n_core) == (question_set == "extended")
+        ]
         self.questions_subquestions = {
-            item["question"]: item["subquestions"] for item in data["questions"]
+            item["question"]: item["subquestions"] for _, item in selected
         }
+        self.question_indexes = {item["question"]: i for i, item in selected}
 
         self.questions_answers = self.__answer_question(self.__path)
+        # Extended questions that do not apply to this trace (e.g. no DNS)
+        for q in [q for q in EXTENDED if q in self.questions_subquestions]:
+            if self.questions_answers.get(q) is None:
+                del self.questions_subquestions[q]
+                del self.question_indexes[q]
         self.processed_file = self.__process_file(self.__path, windows_context_size)
 
     def __process_file(self, file_path: str, windows_context_size: str) -> str:
@@ -183,6 +211,7 @@ class Dataset:
         """
         logger.debug(f"Answering questions for file {file_path}")
         packets = rdpcap(file_path)
+        self.n_packets = len(packets)
         questions_answers = {}
         total_size = 0
         duration = 0
@@ -198,92 +227,12 @@ class Dataset:
             duration = 0
 
         for question in self.questions_subquestions.keys():
-            if question == "What is the total number of packets in the trace?":
-                questions_answers[question] = len(packets)
-
-            elif question == "How many unique communicators are present in the trace?":
-                unique_communicators = set()
-                for packet in packets:
-                    if packet.haslayer("IP"):
-                        unique_communicators.add(packet["IP"].src)
-                        unique_communicators.add(packet["IP"].dst)
-                    elif packet.haslayer("IPv6"):
-                        unique_communicators.add(packet["IPv6"].src)
-                        unique_communicators.add(packet["IPv6"].dst)
-                questions_answers[question] = len(unique_communicators)
-
+            if question in EXTENDED:
+                questions_answers[question] = EXTENDED[question](packets)
             elif (
-                question
-                == "What is the IP that participates the most in communications in the trace?"
-            ):
-                ip_count = {}
-                for packet in packets:
-                    if packet.haslayer("IP"):
-                        src_ip = packet["IP"].src
-                        dst_ip = packet["IP"].dst
-                        ip_count[src_ip] = ip_count.get(src_ip, 0) + 1
-                        ip_count[dst_ip] = ip_count.get(dst_ip, 0) + 1
-                    elif packet.haslayer("IPv6"):
-                        src_ip = packet["IPv6"].src
-                        dst_ip = packet["IPv6"].dst
-                        ip_count[src_ip] = ip_count.get(src_ip, 0) + 1
-                        ip_count[dst_ip] = ip_count.get(dst_ip, 0) + 1
-                if ip_count:
-                    max_count = max(ip_count.values())
-                    most_common_ips = [
-                        ip for ip, count in ip_count.items() if count == max_count
-                    ]
-                    most_common_ip = (
-                        " or ".join(most_common_ips)
-                        if len(most_common_ips) > 1
-                        else most_common_ips[0]
-                    )
-                else:
-                    most_common_ip = "No IP communications found"
-                questions_answers[question] = most_common_ip
-
-            elif question == "What is the total size of transmitted bytes?":
-                questions_answers[question] = total_size
-
-            elif question == "What is the average size of packets in bytes?":
-                average_size = total_size / len(packets) if packets else 0
-                questions_answers[question] = average_size
-
-            elif question == "What predominates in the capture: ICMP, TCP, or UDP?":
-                protocol_count = {"ICMP": 0, "ICMPv6": 0, "TCP": 0, "UDP": 0}
-                for packet in packets:
-                    if packet.haslayer("ICMP"):
-                        protocol_count["ICMP"] += 1
-                    elif packet.haslayer("ICMPv6"):
-                        protocol_count["ICMPv6"] += 1
-                    elif packet.haslayer("TCP"):
-                        protocol_count["TCP"] += 1
-                    elif packet.haslayer("UDP"):
-                        protocol_count["UDP"] += 1
-                if sum(protocol_count.values()) == 0:
-                    predominant_protocol = "No ICMP, ICMPv6, TCP, or UDP packets found"
-                else:
-                    predominant_protocol = max(protocol_count, key=protocol_count.get)
-                questions_answers[question] = predominant_protocol
-
-            elif question == "How long in seconds does the communication last?":
-                questions_answers[question] = duration
-
-            elif question == "What is the average number of packets sent per second?":
-                average_packets_per_second = (
-                    len(packets) / duration
-                    if duration > 0
-                    else "There is only one packet in the trace, operation not possible"
-                )
-                questions_answers[question] = average_packets_per_second
-
-            elif question == "What is the average bytes/s sent in the communication?":
-                average_bytes_per_second = (
-                    total_size / duration
-                    if duration > 0
-                    else "There is only one packet in the trace, operation not possible"
-                )
-                questions_answers[question] = average_bytes_per_second
+                answer := core_answer(question, packets, total_size, duration)
+            ) is not None:
+                questions_answers[question] = answer
 
         logger.debug(f"Questions answered for file {file_path}")
         return questions_answers
