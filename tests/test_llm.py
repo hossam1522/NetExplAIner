@@ -167,7 +167,7 @@ def _responder(messages):
         return "1. sub a\n\n2. sub b\n"
     if "Q+A pairs" in text:
         return "final"
-    if "Think step by step" in text:
+    if "Let's think step by step" in text:
         return "cot answer"
     return "partial"
 
@@ -214,12 +214,6 @@ def test_strategy_routing(fake_chat_model, strategy, index, decomposed):
 def test_mixed_custom_direct_questions(fake_chat_model):
     pipeline, _ = _pipeline(fake_chat_model)
     assert not pipeline.run("mixed", "Q?", 3, direct_questions=[3]).decomposed
-
-
-def test_react_not_implemented(fake_chat_model):
-    pipeline, _ = _pipeline(fake_chat_model)
-    with pytest.raises(NotImplementedError):
-        pipeline.run("react", "Q?", 1)
 
 
 def test_request_delay(fake_chat_model):

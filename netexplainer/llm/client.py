@@ -11,6 +11,12 @@ from netexplainer.llm.tools import TOOLS
 
 logger = logging.getLogger(__name__)
 
+# Tool modes: ``none`` (no tools), ``callable`` (tools bound and executed) and
+# ``declared`` (tools bound/described but never executed: the prompt effect).
+TOOL_MODES = ("none", "callable", "declared")
+TOOL_UNAVAILABLE = "Error: the tool is not available. Answer without using tools."
+MAX_TOOL_ROUNDS = 10
+
 
 @dataclass
 class Usage:
@@ -20,6 +26,7 @@ class Usage:
     tokens_in: int = 0
     tokens_out: int = 0
     tool_calls: int = 0
+    tool_calls_blocked: int = 0  # calls answered with TOOL_UNAVAILABLE
     latency_s: float = 0.0
 
     def to_dict(self) -> dict:
@@ -27,16 +34,23 @@ class Usage:
 
 
 class LLMClient:
-    def __init__(self, chat_model: BaseChatModel, tools: bool = False):
+    def __init__(self, chat_model: BaseChatModel, tools: bool | str = False):
         """
         Args:
             chat_model: LangChain chat model (see ``backends.build_chat_model``).
-            tools: bind the external tools (calculator) to every call.
+            tools: tool mode, one of :data:`TOOL_MODES` (``True`` = callable,
+                ``False`` = none). ``declared`` binds the calculator so the
+                model sees its definition, but a call is answered with a
+                constant error message (and counted in ``tool_calls_blocked``).
         """
+        mode = {True: "callable", False: "none"}.get(tools, tools)
+        if mode not in TOOL_MODES:
+            raise ValueError(f"Unknown tool mode {tools!r}, expected {TOOL_MODES}")
         self.llm = chat_model
-        self.tools = tools
+        self.tool_mode = mode
+        self.tools = mode != "none"  # tools are bound to the model
         self._tools_by_name = {t.name: t for t in TOOLS}
-        self.llm_with_tools = chat_model.bind_tools(tools=TOOLS) if tools else None
+        self.llm_with_tools = chat_model.bind_tools(tools=TOOLS) if self.tools else None
         self.usage = Usage()
 
     def reset_usage(self) -> Usage:
@@ -44,8 +58,16 @@ class LLMClient:
         usage, self.usage = self.usage, Usage()
         return usage
 
-    def _invoke_once(self, messages: list[BaseMessage]):
-        runnable = self.llm_with_tools if self.tools else self.llm
+    def run_tool(self, name: str, expression: str) -> str:
+        """Execute tool ``name`` (counted); in ``declared`` mode it only fails."""
+        self.usage.tool_calls += 1
+        if self.tool_mode != "callable" or name not in self._tools_by_name:
+            self.usage.tool_calls_blocked += 1
+            return TOOL_UNAVAILABLE
+        return self._tools_by_name[name].invoke(expression)
+
+    def _invoke_once(self, messages: list[BaseMessage], plain: bool = False):
+        runnable = self.llm_with_tools if self.tools and not plain else self.llm
         start = time.perf_counter()
         response = runnable.invoke(messages)
         self.usage.latency_s += time.perf_counter() - start
@@ -55,26 +77,32 @@ class LLMClient:
         self.usage.tokens_out += meta.get("output_tokens", 0) or 0
         return response
 
+    def invoke_plain(self, messages: list[BaseMessage]) -> str:
+        """One call without native tool binding (used by the text-based ReAct)."""
+        return self._invoke_once(messages, plain=True).content
+
     def invoke(self, messages: list[BaseMessage]) -> str:
         """Call the model; while it requests tools, run them and call it again.
 
-        Returns the content of the first response without tool calls.
+        Returns the content of the first response without tool calls (or of
+        the last one after ``MAX_TOOL_ROUNDS`` rounds of tool calls).
         """
         response = self._invoke_once(messages)
-        while response.tool_calls:
+        rounds = 0
+        while response.tool_calls and rounds < MAX_TOOL_ROUNDS:
+            rounds += 1
             tool_responses = []
             for tool_call in response.tool_calls:
-                self.usage.tool_calls += 1
-                if tool_call["name"] in self._tools_by_name:
-                    tool = self._tools_by_name[tool_call["name"]]
-                    result = tool.invoke(tool_call["args"]["expression"])
-                    tool_responses.append(
-                        ToolMessage(
-                            content=result,
-                            name=tool_call["name"],
-                            tool_call_id=tool_call["id"],
-                        )
+                result = self.run_tool(
+                    tool_call["name"], tool_call["args"].get("expression", "")
+                )
+                tool_responses.append(
+                    ToolMessage(
+                        content=result,
+                        name=tool_call["name"],
+                        tool_call_id=tool_call["id"],
                     )
+                )
             messages.append(response)
             messages.extend(tool_responses)
             response = self._invoke_once(messages)

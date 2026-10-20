@@ -9,6 +9,7 @@ the final answer from the question and the (q_i, a_i) pairs only.
 """
 
 import logging
+import re
 import time
 from collections.abc import Callable, Iterable
 from dataclasses import dataclass, field
@@ -24,6 +25,10 @@ STRATEGIES = ("direct", "cot", "decomp", "decomp_tools", "mixed", "react")
 # Questions answered directly by the ``mixed`` strategy (1-based indexes in
 # questions.yaml): the simple retrieval questions Q1, Q2 and Q4 of the paper.
 DEFAULT_MIXED_DIRECT = (1, 2, 4)
+REACT_MAX_STEPS = 8
+
+_FINAL = re.compile(r"Final Answer:\s*(.*)", re.DOTALL | re.IGNORECASE)
+_ACTION = re.compile(r"Action:\s*(\w+)\s*\[(.*)\]", re.IGNORECASE)
 
 
 @dataclass
@@ -32,6 +37,7 @@ class PipelineResult:
     decomposed: bool = False
     subquestions: list[str] = field(default_factory=list)
     intermediate_answers: list[str] = field(default_factory=list)
+    steps: list[str] = field(default_factory=list)  # ReAct Thought/Action/Observation
 
 
 def uses_decomposition(
@@ -53,6 +59,7 @@ class Pipeline:
         model_label: str = "",
         request_delay: float = 0.0,
         sleep: Callable[[float], None] = time.sleep,
+        react_max_steps: int = REACT_MAX_STEPS,
     ):
         """
         Args:
@@ -68,6 +75,7 @@ class Pipeline:
         self.model = model_label
         self.request_delay = request_delay
         self._sleep = sleep
+        self.react_max_steps = react_max_steps
 
     def _call(self, template: str, **values) -> str:
         messages = ChatPromptTemplate.from_template(template).format_messages(**values)
@@ -112,6 +120,51 @@ class Pipeline:
         final = self.aggregate(question, subquestions, answers)
         return PipelineResult(final, True, subquestions, answers)
 
+    def _tool_observation(self, text: str) -> str:
+        """Run the Action of a ReAct step (calculator) and return the observation."""
+        match = _ACTION.search(text)
+        if self.client.tool_mode == "none" or not match:
+            return "Error: no valid tool action. Give the Final Answer."
+        try:
+            return self.client.run_tool(match[1], match[2].strip())
+        except Exception as e:  # numexpr syntax errors etc. go back to the model
+            return f"Error: {e}"
+
+    def run_react(self, question: str) -> PipelineResult:
+        """ReAct loop (Thought/Action/Observation) over the full trace.
+
+        At most ``react_max_steps`` model calls; if none gives a Final Answer,
+        one last call forces it. A reply with neither Action nor Final Answer
+        is taken as the answer.
+        """
+        tools = (
+            prompts.REACT_NO_TOOLS
+            if self.client.tool_mode == "none"
+            else prompts.REACT_TOOLS
+        )
+        steps: list[str] = []
+        for step in range(self.react_max_steps + 1):
+            self._pause()
+            last = step == self.react_max_steps
+            scratchpad = "\n".join(steps)
+            if last:
+                scratchpad += "\nThought: I must answer now.\nFinal Answer:"
+            messages = ChatPromptTemplate.from_template(prompts.REACT).format_messages(
+                tools=tools,
+                question=question,
+                traces=self.trace,
+                scratchpad=scratchpad,
+            )
+            text = self.client.invoke_plain(messages)
+            text = re.split(r"\n\s*Observation:", text)[0].strip()
+            final = _FINAL.search(text)
+            if final or last or not _ACTION.search(text):
+                answer = final[1].strip() if final else text
+                steps.append(f"Final Answer: {answer}")
+                return PipelineResult(answer, steps=steps)
+            steps += [text, f"Observation: {self._tool_observation(text)}"]
+        raise AssertionError("unreachable")
+
     def run(
         self,
         strategy: str,
@@ -122,11 +175,14 @@ class Pipeline:
         """Answer ``question`` (1-based ``question_index``) with ``strategy``.
 
         ``decomp_tools`` behaves as ``decomp``: tools are enabled in the client.
+        ``direct`` is the question as is (prompt ANSWER); ``cot`` is the same
+        question with zero-shot "Let's think step by step" (prompt COT), in a
+        single call; ``react`` runs :meth:`run_react`.
         """
         if strategy not in STRATEGIES:
             raise ValueError(f"Unknown strategy {strategy!r}, expected {STRATEGIES}")
         if strategy == "react":
-            raise NotImplementedError("The 'react' strategy is not implemented yet")
+            return self.run_react(question)
         if uses_decomposition(strategy, question_index, direct_questions):
             return self.run_decomposed(question)
         if strategy == "cot":

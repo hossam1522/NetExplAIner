@@ -19,9 +19,17 @@ from netexplainer.llm.pipeline import DEFAULT_MIXED_DIRECT, uses_decomposition
 SCHEMA_VERSION = 1
 
 
-def condition_label(strategy: str, tools: bool) -> str:
-    """Experimental condition, e.g. ``decomp+tools``."""
-    return f"{strategy}+tools" if tools else strategy
+def tool_mode_of(record: dict) -> str:
+    """``none``/``callable``/``declared``; derived from ``tools`` in old records."""
+    return record.get("tool_mode") or ("callable" if record.get("tools") else "none")
+
+
+def condition_label(strategy: str, tools: bool | str) -> str:
+    """Experimental condition, e.g. ``decomp+tools`` (calculator callable) or
+    ``decomp+declared`` (calculator declared but not callable)."""
+    mode = {True: "callable", False: "none"}.get(tools, tools)
+    suffix = {"callable": "+tools", "declared": "+declared"}.get(mode, "")
+    return strategy + suffix
 
 
 def record_key(record: dict) -> tuple:
@@ -29,7 +37,7 @@ def record_key(record: dict) -> tuple:
     return (
         record["model"],
         record["strategy"],
-        bool(record["tools"]),
+        tool_mode_of(record),
         record["file"],
         record["question"],
     )
@@ -59,7 +67,9 @@ def make_record(**fields) -> dict:
         "git_commit": git_commit(),
     }
     record.update(fields)
-    record["condition"] = condition_label(record["strategy"], record["tools"])
+    record.setdefault("tool_mode", tool_mode_of(record))
+    record["tools"] = record["tool_mode"] == "callable"
+    record["condition"] = condition_label(record["strategy"], record["tool_mode"])
     record["verdict"] = parse_verdict(record.get("judge_raw"))
     record["correct"] = {"YES": True, "NO": False}.get(record["verdict"])
     record["subq_similarity"] = parse_similarity(record.get("subq_similarity_raw"))

@@ -5,6 +5,7 @@ from netexplainer.llm.client import LLMClient, Usage
 from netexplainer.llm.models import MODELS, ModelSpec, resolve_model
 from netexplainer.llm.pipeline import (
     DEFAULT_MIXED_DIRECT,
+    REACT_MAX_STEPS,
     STRATEGIES,
     Pipeline,
     PipelineResult,
@@ -15,6 +16,7 @@ __all__ = [
     "BACKENDS",
     "DEFAULT_MIXED_DIRECT",
     "MODELS",
+    "REACT_MAX_STEPS",
     "STRATEGIES",
     "TOOLS",
     "GenerationParams",

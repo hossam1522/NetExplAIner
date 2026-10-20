@@ -82,6 +82,11 @@ def build_chat_model(
             num_predict=p.max_tokens,
             base_url=base_url,
         )
+        # Optional hard limit per request (seconds): a degenerate generation that
+        # never stops would otherwise block the run forever.
+        timeout = os.environ.get("NETEXPLAINER_LLM_TIMEOUT")
+        if timeout and "client_kwargs" not in extra:
+            extra = {**extra, "client_kwargs": {"timeout": float(timeout)}}
         return ChatOllama(**kwargs, **extra)
 
     if backend == "openai":

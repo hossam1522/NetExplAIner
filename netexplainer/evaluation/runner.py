@@ -7,6 +7,8 @@ from collections.abc import Callable
 from dataclasses import dataclass, field
 from pathlib import Path
 
+from scapy.utils import PcapReader
+
 from netexplainer.dataset import Dataset
 from netexplainer.evaluation.judge import Judge
 from netexplainer.evaluation.records import (
@@ -17,6 +19,7 @@ from netexplainer.evaluation.records import (
 )
 from netexplainer.llm import (
     DEFAULT_MIXED_DIRECT,
+    REACT_MAX_STEPS,
     GenerationParams,
     LLMClient,
     Pipeline,
@@ -36,7 +39,12 @@ class RunConfig:
     data_dir: Path
     questions_path: Path
     output: Path
-    tools: list[bool] = field(default_factory=lambda: [False])
+    # tool modes: "none", "callable", "declared" (True/False = callable/none)
+    tools: list[bool | str] = field(default_factory=lambda: ["none"])
+    question_set: str = "core"  # core | extended | all
+    max_packets: int | None = None  # only traces with at most N packets
+    min_packets: int | None = None
+    react_max_steps: int = REACT_MAX_STEPS
     backend: str = "ollama"  # for models that are not in the registry
     base_url: str | None = None
     api_key: str | None = None
@@ -50,24 +58,43 @@ class RunConfig:
     run_id: str = field(default_factory=lambda: uuid.uuid4().hex[:12])
 
 
-def conditions(strategies: list[str], tools: list[bool]) -> list[tuple[str, bool]]:
-    """(strategy, tools) pairs to run. ``decomp_tools`` means decomp + tools."""
+def conditions(strategies: list[str], tools: list[bool | str]) -> list[tuple[str, str]]:
+    """(strategy, tool mode) pairs to run. ``decomp_tools`` means decomp +
+    callable tools; ``True``/``False`` mean ``callable``/``none``."""
+    modes = [{True: "callable", False: "none"}.get(t, t) for t in tools]
     out = []
     for strategy in strategies:
         pairs = (
-            [("decomp", True)]
+            [("decomp", "callable")]
             if strategy == "decomp_tools"
-            else [(strategy, t) for t in tools]
+            else [(strategy, m) for m in modes]
         )
         out += [p for p in pairs if p not in out]
     return out
 
 
-def list_traces(data_dir: Path, max_files: int | None = None) -> list[Path]:
-    """Capture files in ``data_dir`` in a deterministic (sorted) order."""
+def count_packets(path: Path) -> int:
+    with PcapReader(str(path)) as reader:
+        return sum(1 for _ in reader)
+
+
+def list_traces(
+    data_dir: Path,
+    max_files: int | None = None,
+    max_packets: int | None = None,
+    min_packets: int | None = None,
+) -> list[Path]:
+    """Capture files in ``data_dir`` in a deterministic (sorted) order, keeping
+    those with ``min_packets <= packets <= max_packets`` (as ``clean-data``)."""
     files = sorted(
         p for p in Path(data_dir).iterdir() if p.suffix.lower() in CAPTURE_EXTENSIONS
     )
+    if max_packets is not None or min_packets is not None:
+        files = [
+            p
+            for p in files
+            if (min_packets or 0) <= count_packets(p) <= (max_packets or float("inf"))
+        ]
     return files[:max_files] if max_files is not None else files
 
 
@@ -87,8 +114,6 @@ def _evaluate_question(
         result, subq_raw, judge_raw = None, None, None
         try:
             result = pipeline.run(strategy, question, idx, cfg.direct_questions)
-        except NotImplementedError:
-            raise
         except Exception as e:
             logger.error(
                 f"Error processing question {question} in file {Path(dataset.processed_file).name}: {e}"
@@ -123,6 +148,7 @@ def _evaluate_question(
         "decomposed": result.decomposed if result else None,
         "subquestions": result.subquestions if result else None,
         "intermediate_answers": result.intermediate_answers if result else None,
+        "react_steps": result.steps if result and result.steps else None,
         "final_answer": result.final_answer if result else None,
         "reference_subquestions": dataset.questions_subquestions[question],
         "ground_truth": str(dataset.questions_answers.get(question)),
@@ -150,7 +176,7 @@ def run_experiment(
         raise FileExistsError(
             f"{cfg.output} already exists; use --resume or another --output-dir"
         )
-    traces = list_traces(cfg.data_dir, cfg.max_files)
+    traces = list_traces(cfg.data_dir, cfg.max_files, cfg.max_packets, cfg.min_packets)
     written = 0
     for model in cfg.models:
         spec = resolve_model(model, cfg.backend)
@@ -167,13 +193,18 @@ def run_experiment(
         if delay is None:
             delay = 2.5 if spec.backend == "google" else 0.0
         clients = {
-            t: LLMClient(chat_model, tools=t)
-            for _, t in conditions(cfg.strategies, cfg.tools)
+            m: LLMClient(chat_model, tools=m)
+            for _, m in conditions(cfg.strategies, cfg.tools)
         }
         for trace in traces:
             try:
                 logger.debug(f"Processing file: {trace.name} with model: {model}")
-                dataset = Dataset(str(trace), str(cfg.questions_path), spec.context)
+                dataset = Dataset(
+                    str(trace),
+                    str(cfg.questions_path),
+                    spec.context,
+                    cfg.question_set,
+                )
                 text = Path(dataset.processed_file).read_text()
             except Exception as e:
                 logger.error(
@@ -181,14 +212,17 @@ def run_experiment(
                 )
                 sleep(cfg.error_delay)
                 continue
-            for strategy, tools in conditions(cfg.strategies, cfg.tools):
-                client = clients[tools]
-                pipeline = Pipeline(client, text, spec.name, delay, sleep)
-                for idx, question in enumerate(dataset.questions_subquestions, start=1):
+            for strategy, tool_mode in conditions(cfg.strategies, cfg.tools):
+                client = clients[tool_mode]
+                pipeline = Pipeline(
+                    client, text, spec.name, delay, sleep, cfg.react_max_steps
+                )
+                for question, idx in dataset.question_indexes.items():
                     base = {
                         "model": model,
                         "strategy": strategy,
-                        "tools": tools,
+                        "tools": tool_mode == "callable",
+                        "tool_mode": tool_mode,
                         "file": trace.name,
                         "question": question,
                     }
@@ -211,6 +245,7 @@ def run_experiment(
                         model_name=spec.name,
                         backend=spec.backend,
                         question_index=idx,
+                        n_packets=dataset.n_packets,
                         seed=params.seed,
                         generation_params=params.to_dict(),
                         **base,
@@ -220,7 +255,7 @@ def run_experiment(
                     written += 1
                     sim = record["subq_similarity_raw"] if record["decomposed"] else 100
                     logger.info(
-                        f"Model: {model}{'_tools' if tools else ''}, File: {trace.name}, "
+                        f"Model: {model}{'_tools' if tool_mode == 'callable' else ''}, File: {trace.name}, "
                         f"Question: {question}, Subquestions Eval: {sim}, "
                         f"Answer Eval: {record['verdict']}"
                     )
