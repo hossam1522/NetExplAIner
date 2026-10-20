@@ -14,6 +14,12 @@ import yaml
 
 from netexplainer.evaluation.metrics import accuracy_table, paired_tests
 from netexplainer.evaluation.records import load_records
+from netexplainer.evaluation.stats import (
+    accuracy_clustered,
+    compare_to_baseline,
+    efficiency_table,
+    judge_agreement,
+)
 
 DEFAULT_QUESTIONS = Path(__file__).resolve().parents[1] / "data" / "questions.yaml"
 
@@ -34,6 +40,28 @@ def markdown_table(rows: list[dict]) -> str:
     lines = ["| " + " | ".join(cols) + " |", "|" + "---|" * len(cols)]
     lines += ["| " + " | ".join(fmt(r[c]) for c in cols) + " |" for r in rows]
     return "\n".join(lines) + "\n"
+
+
+def latex_table(rows: list[dict]) -> str:
+    """``tabular`` with the columns of ``rows`` (3 decimals, escaped text)."""
+    if not rows:
+        return "% (no data)\n"
+
+    def fmt(v):
+        text = f"{v:.3f}" if isinstance(v, float) else str(v)
+        for ch in "&%_#$":
+            text = text.replace(ch, "\\" + ch)
+        return text
+
+    cols = list(rows[0])
+    lines = [
+        "\\begin{tabular}{" + "l" * len(cols) + "}",
+        "\\toprule",
+        " & ".join(fmt(c) for c in cols) + " \\\\",
+        "\\midrule",
+    ]
+    lines += [" & ".join(fmt(r[c]) for c in cols) + " \\\\" for r in rows]
+    return "\n".join(lines + ["\\bottomrule", "\\end{tabular}"]) + "\n"
 
 
 def similarity_table(records: list[dict]) -> list[dict]:
@@ -70,6 +98,29 @@ def build_parser(parser: argparse.ArgumentParser | None = None):
     parser.add_argument(
         "--json", action="store_true", help="print JSON instead of markdown"
     )
+    parser.add_argument(
+        "--latex", action="store_true", help="print LaTeX tabulars (booktabs)"
+    )
+    parser.add_argument(
+        "--baseline",
+        default="direct",
+        help="condition of the McNemar tests with Holm correction (default: direct)",
+    )
+    parser.add_argument(
+        "--bootstrap",
+        type=int,
+        default=1000,
+        metavar="B",
+        help="trace-clustered bootstrap replicates (0 = skip; default 1000)",
+    )
+    parser.add_argument("--seed", type=int, default=0, help="bootstrap seed")
+    parser.add_argument(
+        "--second-judge",
+        type=Path,
+        metavar="JSONL",
+        help="the same answers judged by another judge (see 'rejudge'): "
+        "agreement per question",
+    )
     return parser
 
 
@@ -83,11 +134,23 @@ def run(args) -> int:
         )
     tables["subquestion_similarity"] = similarity_table(records)
     tables["mcnemar"] = paired_tests(records)
+    tables["accuracy_clustered"] = accuracy_clustered(
+        records, args.bootstrap, args.seed
+    )
+    tables[f"mcnemar_vs_{args.baseline}_holm"] = compare_to_baseline(
+        records, args.baseline
+    )
+    tables["efficiency"] = efficiency_table(records)
+    if args.second_judge:
+        tables["judge_agreement"] = judge_agreement(
+            records, load_records([args.second_judge])
+        )
     if args.json:
         print(json.dumps(tables, indent=2, default=str))
     else:
+        render = latex_table if args.latex else markdown_table
         for name, rows in tables.items():
-            print(f"## {name}\n\n{markdown_table(rows)}")
+            print(f"## {name}\n\n{render(rows)}")
     if args.plots:
         from netexplainer.evaluation.plots import generate_plots
 
