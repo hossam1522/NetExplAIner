@@ -352,3 +352,35 @@ def test_plots(tmp_path):
         generate_plots(records, tmp_path)
     assert (tmp_path / "phi4_decomp" / "answers.txt").exists()
     assert (tmp_path / "phi4_decomp_tools" / "subquestions_similarity.txt").exists()
+
+
+def test_rejudge_fills_verdicts_and_resumes(tmp_path, fake_chat_model):
+    from netexplainer.evaluation.judge import NullJudge
+    from netexplainer.evaluation.records import append_jsonl, make_record, read_jsonl
+    from netexplainer.evaluation.rejudge import rejudge
+
+    src, out = tmp_path / "in.jsonl", tmp_path / "out.jsonl"
+    base = dict(
+        model="m",
+        strategy="decomp",
+        tools=False,
+        file="a.pcap",
+        question="Q1?",
+        decomposed=True,
+        subquestions=["s"],
+        reference_subquestions=["r"],
+        final_answer="42",
+        ground_truth="42",
+        judge_raw=NullJudge().evaluate_answer("Q1?", "42", 42),
+    )
+    append_jsonl(src, make_record(**base))
+    append_jsonl(src, make_record(**{**base, "question": "Q2?", "final_answer": None}))
+    assert next(read_jsonl(src))["correct"] is None
+
+    judge = Judge(fake_chat_model(lambda m: "YES"), name="j", delay=0)
+    assert rejudge(src, out, judge, sleep=lambda s: None) == 2
+    first, second = read_jsonl(out)
+    assert first["correct"] is True and first["judge_model"] == "j"
+    assert first["subq_similarity"] is None  # "YES" is not a similarity
+    assert second["correct"] is None  # no answer: copied untouched
+    assert rejudge(src, out, judge, sleep=lambda s: None) == 0

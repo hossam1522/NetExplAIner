@@ -54,7 +54,7 @@ Optional plots: `uv sync --extra plots`.
    ```
    If you do not want to filter, rename `raw/` to `cleaned/`.
 
-`urls.txt` lists the source files used in the paper and `hashes.txt` the SHA-256 of each of them (note that `download-data` converts `.cap` files to `.pcap`).
+`download-data` fetches exactly the files of `urls.txt` and verifies each one against the SHA-256 in `hashes.txt` (files that do not match are deleted and reported; `--no-verify` skips the check, `--scrape` scrapes the current wiki instead, which is not reproducible). Downloads are retried with backoff (the host answers 429 under load, so expect it to take about an hour) and resumed if interrupted. `.cap` files are converted to `.pcap` after verification.
 
 Questions, reference sub-questions and the default models are in `netexplainer/data/questions.yaml`. A new question also needs its ground truth in `Dataset.__answer_question` (`netexplainer/dataset.py`).
 
@@ -86,11 +86,16 @@ uv run python -m netexplainer run --backend openai --base-url http://localhost:8
     --judge-backend openai --judge-base-url http://localhost:8001/v1 \
     --judge-model google/gemma-3-27b-it
 
+# Generate without judge (e.g. GPUs busy with the model) and judge afterwards
+uv run python -m netexplainer run --models phi4 --strategy mixed --judge-backend none --output-dir results/a
+uv run python -m netexplainer rejudge results/a/results.jsonl -o results/a/judged.jsonl \
+    --judge-backend ollama --judge-model gemma3:27b
+
 # Quick test on 3 traces, resuming an interrupted run
 uv run python -m netexplainer run --models phi4 --max-files 3 --output-dir results/test --resume
 ```
 
-Models: `--models` accepts the aliases of the paper (`netexplainer/llm/models.py`: `gemini-2.0-flash`, `gemma-3-27b`, `qwen2.5-32b`, `llama2-7b`, `mistral-7b`, `llama3.1-8b`, `gemma-3-12b-ollama`, `granite3.3-8b`, `phi4`, `gpt-oss-20b`, `aya-expanse-8b`, `deepseek-r1-8b`, `cogito-8b`), which fix the backend, model name and context window used in the paper, or any other model name, served by `--backend` (`ollama`, `openai`, `google`) at `--base-url`.
+Models: `--models` accepts the aliases of the paper (`netexplainer/llm/models.py`: `gemini-2.0-flash`, `gemma-3-27b`, `qwen2.5-32b`, `llama2-7b`, `mistral-7b`, `llama3.1-8b`, `gemma-3-12b-ollama`, `granite3.3-8b`, `phi4` (fp16), `phi4-q4` (Q4_K_M, the main runs of the paper), `gpt-oss-20b`, `aya-expanse-8b`, `deepseek-r1-8b`, `cogito-8b`), which fix the backend, model name and context window used in the paper, or any other model name, served by `--backend` (`ollama`, `openai`, `google`) at `--base-url`.
 
 Generation parameters (`--temperature`, `--top-p`, `--top-k`, `--seed`, `--num-ctx`, `--max-tokens`) are only sent when given. By default nothing is sent, which reproduces the paper: Ollama defaults (temperature 0.8, top_p 0.9, top_k 40, unless the model's Modelfile overrides them), temperature 0 for the Google models, and the per-model `num_ctx` of the registry. For vLLM the context length is set when starting the server (`--max-model-len`).
 

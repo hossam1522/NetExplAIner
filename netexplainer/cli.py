@@ -26,6 +26,43 @@ def _int_list(text: str) -> tuple[int, ...]:
     return tuple(int(x) for x in text.split(",") if x.strip())
 
 
+def _add_judge_arguments(p: argparse.ArgumentParser) -> None:
+    g = p.add_argument_group("judge")
+    g.add_argument(
+        "--judge-backend",
+        choices=(*BACKENDS, "none"),
+        default=DEFAULT_JUDGE_BACKEND,
+        help="'none' skips judging (use 'rejudge' later)",
+    )
+    g.add_argument("--judge-model", default=DEFAULT_JUDGE_MODEL)
+    g.add_argument("--judge-base-url")
+    g.add_argument("--judge-temperature", type=float, default=DEFAULT_JUDGE_TEMPERATURE)
+    g.add_argument(
+        "--judge-delay",
+        type=float,
+        default=0.5,
+        help="seconds between judge calls (API rate limits)",
+    )
+
+
+def _build_judge(args):
+    from netexplainer.evaluation.judge import Judge, NullJudge
+    from netexplainer.llm import build_chat_model
+
+    if args.judge_backend == "none":
+        return NullJudge()
+    return Judge(
+        build_chat_model(
+            args.judge_backend,
+            args.judge_model,
+            GenerationParams(temperature=args.judge_temperature),
+            base_url=args.judge_base_url,
+        ),
+        name=args.judge_model,
+        delay=args.judge_delay,
+    )
+
+
 def _add_run_arguments(p: argparse.ArgumentParser) -> None:
     g = p.add_argument_group("models")
     g.add_argument(
@@ -76,11 +113,7 @@ def _add_run_arguments(p: argparse.ArgumentParser) -> None:
         "--num-ctx", type=int, help="context window (overrides the registry)"
     )
     g.add_argument("--max-tokens", type=int)
-    g = p.add_argument_group("judge")
-    g.add_argument("--judge-backend", choices=BACKENDS, default=DEFAULT_JUDGE_BACKEND)
-    g.add_argument("--judge-model", default=DEFAULT_JUDGE_MODEL)
-    g.add_argument("--judge-base-url")
-    g.add_argument("--judge-temperature", type=float, default=DEFAULT_JUDGE_TEMPERATURE)
+    _add_judge_arguments(p)
     g = p.add_argument_group("data and execution")
     g.add_argument("--data-dir", type=Path, default=DATA_DIR / "cleaned")
     g.add_argument("--questions", type=Path, default=DEFAULT_QUESTIONS)
@@ -106,10 +139,26 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--version", action="version", version=__version__)
     parser.add_argument("--log-file", type=Path, default=DEFAULT_LOG)
     sub = parser.add_subparsers(dest="command", required=True)
-    sub.add_parser("download-data", help="download captures from the Wireshark wiki")
+    p = sub.add_parser(
+        "download-data",
+        help="download the captures of urls.txt, verified against hashes.txt",
+    )
+    p.add_argument("--urls", type=Path, help="list of URLs (default: urls.txt)")
+    p.add_argument("--hashes", type=Path, help="SHA-256 list (default: hashes.txt)")
+    p.add_argument("--no-verify", action="store_true", help="skip hash verification")
+    p.add_argument(
+        "--scrape",
+        action="store_true",
+        help="scrape the current Wireshark wiki instead (not reproducible)",
+    )
     p = sub.add_parser("clean-data", help="keep captures with at most N packets")
     p.add_argument("max_packets", type=int)
     _add_run_arguments(sub.add_parser("run", help="run the evaluation"))
+    p = sub.add_parser("rejudge", help="judge or re-judge the answers of a JSONL file")
+    p.add_argument("results", type=Path)
+    p.add_argument("-o", "--output", type=Path, required=True)
+    p.add_argument("--max-attempts", type=int, default=10)
+    _add_judge_arguments(p)
     analysis.build_parser(
         sub.add_parser("analyze", help="accuracy, CIs and McNemar tests")
     )
@@ -125,9 +174,7 @@ def build_parser() -> argparse.ArgumentParser:
 
 
 def cmd_run(args) -> int:
-    from netexplainer.evaluation.judge import Judge
     from netexplainer.evaluation.runner import RunConfig, run_experiment
-    from netexplainer.llm import build_chat_model
 
     models = args.models
     if not models:
@@ -137,16 +184,7 @@ def cmd_run(args) -> int:
         raise SystemExit("No models given (--models or 'models' in the questions file)")
     if "react" in args.strategy:
         raise SystemExit("The 'react' strategy is a placeholder, not implemented yet")
-    judge_params = GenerationParams(temperature=args.judge_temperature)
-    judge = Judge(
-        build_chat_model(
-            args.judge_backend,
-            args.judge_model,
-            judge_params,
-            base_url=args.judge_base_url,
-        ),
-        name=args.judge_model,
-    )
+    judge = _build_judge(args)
     cfg = RunConfig(
         models=models,
         strategies=args.strategy,
@@ -200,7 +238,22 @@ def main(argv=None) -> int:
     if args.command == "download-data":
         from netexplainer.scraper import Scraper
 
-        Scraper().download_captures()
+        if args.scrape:
+            Scraper().download_captures()
+            return 0
+        from netexplainer.scraper import DEFAULT_HASHES, DEFAULT_URLS
+
+        scraper = Scraper(scrape=False)
+        report = scraper.download_listed(
+            args.urls or DEFAULT_URLS,
+            args.hashes or DEFAULT_HASHES,
+            verify=not args.no_verify,
+        )
+        print({k: len(v) for k, v in report.items()})
+        for k in ("mismatch", "missing_hash", "failed"):
+            for name in report[k]:
+                print(f"{k}: {name}")
+        return 1 if report["mismatch"] or report["failed"] else 0
     elif args.command == "clean-data":
         from netexplainer.scraper import Scraper
 
@@ -211,6 +264,11 @@ def main(argv=None) -> int:
         from netexplainer.evaluation.analysis import run
 
         return run(args)
+    elif args.command == "rejudge":
+        from netexplainer.evaluation.rejudge import rejudge
+
+        n = rejudge(args.results, args.output, _build_judge(args), args.max_attempts)
+        print(f"Wrote {n} records to {args.output}")
     elif args.command == "convert-log":
         return cmd_convert_log(args)
     return 0

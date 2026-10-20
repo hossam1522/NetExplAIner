@@ -91,3 +91,17 @@ class Judge:
             f"Question: {question}, Answer LLM: {answer_llm}, Answer: {ground_truth}, Comparison: {answer}"
         )
         return answer
+
+
+class NullJudge:
+    """Judge that does not judge (``--judge-backend none``): raw outputs are
+    ``None``, so records are stored as ``PROBLEM`` until they are re-judged
+    with ``netexplainer rejudge``."""
+
+    name = "none"
+
+    def evaluate_subquestions(self, question, subquestions, reference):
+        return None
+
+    def evaluate_answer(self, question, answer_llm, ground_truth):
+        return None

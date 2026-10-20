@@ -45,6 +45,7 @@ MODELS: dict[str, ModelSpec] = {
         _ollama("gemma-3-12b-ollama", "gemma3:12b", 128000),
         _ollama("granite3.3-8b", "granite3.3:8b", 32000),
         _ollama("phi4", "phi4:14b-fp16", 16000),
+        _ollama("phi4-q4", "phi4:14b", 16000),  # 4-bit Q4_K_M: main runs of the paper
         _ollama("gpt-oss-20b", "gpt-oss:20b", 32000),
         _ollama("aya-expanse-8b", "aya-expanse:8b", 8192, context="small"),
         _ollama("deepseek-r1-8b", "deepseek-r1:8b", 32000),

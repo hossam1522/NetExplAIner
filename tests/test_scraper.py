@@ -140,3 +140,31 @@ def test_clean_raw_data_error_handling(tmpdir):
             "Error processing file corrupted.pcap: Invalid file"
         )
         assert len(os.listdir(str(cleaned_path))) == 0
+
+
+def test_download_listed_verifies_hashes(tmpdir):
+    import hashlib
+
+    good, bad = b"good content", b"tampered"
+    urls = tmpdir.join("urls.txt")
+    urls.write("http://x/a.pcap\nhttp://x/b.pcap\n")
+    hashes = tmpdir.join("hashes.txt")
+    hashes.write(
+        f"{hashlib.sha256(good).hexdigest()}  a.pcap\n"
+        f"{hashlib.sha256(b'expected').hexdigest()}  b.pcap\n"
+    )
+
+    def fake_get(url, timeout=None):
+        response = Mock()
+        response.content = good if url.endswith("a.pcap") else bad
+        return response
+
+    dest = tmpdir.mkdir("raw")
+    with patch("requests.get", side_effect=fake_get):
+        report = Scraper(scrape=False).download_listed(
+            str(urls), str(hashes), dest=str(dest)
+        )
+
+    assert report["ok"] == ["a.pcap"]
+    assert report["mismatch"] == ["b.pcap"]
+    assert os.listdir(str(dest)) == ["a.pcap"]
