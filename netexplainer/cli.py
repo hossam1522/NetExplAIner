@@ -8,128 +8,19 @@ import yaml
 from dotenv import load_dotenv
 
 from netexplainer import __version__
-from netexplainer.evaluation.judge import (
-    DEFAULT_JUDGE_BACKEND,
-    DEFAULT_JUDGE_MODEL,
-    DEFAULT_JUDGE_TEMPERATURE,
+from netexplainer.cli_run import (
+    DATA_DIR,
+    DEFAULT_QUESTIONS,
+    add_judge_arguments,
+    add_run_arguments,
+    build_judge,
+    int_list,
 )
-from netexplainer.llm import BACKENDS, STRATEGIES, GenerationParams
+from netexplainer.llm import GenerationParams
 
-DATA_DIR = Path("netexplainer/data")
-DEFAULT_QUESTIONS = Path(__file__).parent / "data" / "questions.yaml"
 DEFAULT_LOG = DATA_DIR / "evaluation" / "netexplainer.log"
 
 logger = logging.getLogger("netexplainer")
-
-
-def _int_list(text: str) -> tuple[int, ...]:
-    return tuple(int(x) for x in text.split(",") if x.strip())
-
-
-def _add_judge_arguments(p: argparse.ArgumentParser) -> None:
-    g = p.add_argument_group("judge")
-    g.add_argument(
-        "--judge-backend",
-        choices=(*BACKENDS, "none"),
-        default=DEFAULT_JUDGE_BACKEND,
-        help="'none' skips judging (use 'rejudge' later)",
-    )
-    g.add_argument("--judge-model", default=DEFAULT_JUDGE_MODEL)
-    g.add_argument("--judge-base-url")
-    g.add_argument("--judge-temperature", type=float, default=DEFAULT_JUDGE_TEMPERATURE)
-    g.add_argument(
-        "--judge-delay",
-        type=float,
-        default=0.5,
-        help="seconds between judge calls (API rate limits)",
-    )
-
-
-def _build_judge(args):
-    from netexplainer.evaluation.judge import Judge, NullJudge
-    from netexplainer.llm import build_chat_model
-
-    if args.judge_backend == "none":
-        return NullJudge()
-    return Judge(
-        build_chat_model(
-            args.judge_backend,
-            args.judge_model,
-            GenerationParams(temperature=args.judge_temperature),
-            base_url=args.judge_base_url,
-        ),
-        name=args.judge_model,
-        delay=args.judge_delay,
-    )
-
-
-def _add_run_arguments(p: argparse.ArgumentParser) -> None:
-    g = p.add_argument_group("models")
-    g.add_argument(
-        "--models",
-        nargs="+",
-        help="model aliases (see llm/models.py) or raw "
-        "backend model names; default: 'models' in the questions file",
-    )
-    g.add_argument(
-        "--backend",
-        choices=BACKENDS,
-        default="ollama",
-        help="backend for models not in the registry (default: ollama)",
-    )
-    g.add_argument(
-        "--base-url",
-        help="server URL (Ollama or OpenAI-compatible, e.g. "
-        "http://localhost:8000/v1 for vLLM)",
-    )
-    g = p.add_argument_group("strategy")
-    g.add_argument(
-        "--strategy",
-        nargs="+",
-        choices=STRATEGIES,
-        default=["decomp"],
-        help="one or more strategies (default: decomp)",
-    )
-    g.add_argument(
-        "--direct-questions",
-        type=_int_list,
-        default=(1, 2, 4),
-        metavar="I,J,..",
-        help="1-based questions answered directly by 'mixed' (default: 1,2,4)",
-    )
-    tools = g.add_mutually_exclusive_group()
-    tools.add_argument("--tools", action="store_true", help="bind the calculator tool")
-    tools.add_argument(
-        "--tool-ablation",
-        action="store_true",
-        help="run every strategy both without and with tools",
-    )
-    g = p.add_argument_group("generation (unset = backend default, as in the paper)")
-    g.add_argument("--temperature", type=float)
-    g.add_argument("--top-p", type=float)
-    g.add_argument("--top-k", type=int)
-    g.add_argument("--seed", type=int)
-    g.add_argument(
-        "--num-ctx", type=int, help="context window (overrides the registry)"
-    )
-    g.add_argument("--max-tokens", type=int)
-    _add_judge_arguments(p)
-    g = p.add_argument_group("data and execution")
-    g.add_argument("--data-dir", type=Path, default=DATA_DIR / "cleaned")
-    g.add_argument("--questions", type=Path, default=DEFAULT_QUESTIONS)
-    g.add_argument("--max-files", type=int, help="use only the first N traces (sorted)")
-    g.add_argument("--output-dir", type=Path, default=Path("results"))
-    g.add_argument(
-        "--resume",
-        action="store_true",
-        help="skip items already in <output-dir>/results.jsonl",
-    )
-    g.add_argument("--max-attempts", type=int, default=10)
-    g.add_argument(
-        "--request-delay",
-        type=float,
-        help="seconds between LLM calls (default: 2.5 for Google, else 0)",
-    )
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -153,12 +44,19 @@ def build_parser() -> argparse.ArgumentParser:
     )
     p = sub.add_parser("clean-data", help="keep captures with at most N packets")
     p.add_argument("max_packets", type=int)
-    _add_run_arguments(sub.add_parser("run", help="run the evaluation"))
+    p.add_argument("--raw-dir", type=Path, help="source directory (default: data/raw)")
+    p.add_argument(
+        "--cleaned-dir",
+        type=Path,
+        help="destination directory (default: data/cleaned); use another one "
+        "per N, e.g. data/cleaned512, and pass it to run --data-dir",
+    )
+    add_run_arguments(sub.add_parser("run", help="run the evaluation"))
     p = sub.add_parser("rejudge", help="judge or re-judge the answers of a JSONL file")
     p.add_argument("results", type=Path)
     p.add_argument("-o", "--output", type=Path, required=True)
     p.add_argument("--max-attempts", type=int, default=10)
-    _add_judge_arguments(p)
+    add_judge_arguments(p)
     analysis.build_parser(
         sub.add_parser("analyze", help="accuracy, CIs and McNemar tests")
     )
@@ -169,8 +67,16 @@ def build_parser() -> argparse.ArgumentParser:
         "--strategy", default="decomp", choices=["decomp", "mixed", "direct"]
     )
     p.add_argument("--questions", type=Path, default=DEFAULT_QUESTIONS)
-    p.add_argument("--direct-questions", type=_int_list, default=(1, 2, 4))
+    p.add_argument("--direct-questions", type=int_list, default=(1, 2, 4))
     return parser
+
+
+def _tool_modes(args) -> list[str]:
+    if args.tool_ablation:
+        return ["none", "callable"]
+    if args.tools_declared_not_callable:
+        return ["declared"]
+    return ["callable" if args.tools else "none"]
 
 
 def cmd_run(args) -> int:
@@ -182,16 +88,18 @@ def cmd_run(args) -> int:
             models = yaml.safe_load(f).get("models") or []
     if not models:
         raise SystemExit("No models given (--models or 'models' in the questions file)")
-    if "react" in args.strategy:
-        raise SystemExit("The 'react' strategy is a placeholder, not implemented yet")
-    judge = _build_judge(args)
+    judge = build_judge(args)
     cfg = RunConfig(
         models=models,
         strategies=args.strategy,
         data_dir=args.data_dir,
         questions_path=args.questions,
         output=args.output_dir / "results.jsonl",
-        tools=[False, True] if args.tool_ablation else [args.tools],
+        tools=_tool_modes(args),
+        question_set=args.question_set,
+        max_packets=args.max_packets,
+        min_packets=args.min_packets,
+        react_max_steps=args.react_max_steps,
         backend=args.backend,
         base_url=args.base_url,
         params=GenerationParams(
@@ -257,7 +165,12 @@ def main(argv=None) -> int:
     elif args.command == "clean-data":
         from netexplainer.scraper import Scraper
 
-        Scraper().clean_raw_data(max_packets=args.max_packets)
+        kwargs = {}
+        if args.raw_dir:
+            kwargs["data_path"] = str(args.raw_dir)
+        if args.cleaned_dir:
+            kwargs["cleaned_path"] = str(args.cleaned_dir)
+        Scraper().clean_raw_data(max_packets=args.max_packets, **kwargs)
     elif args.command == "run":
         return cmd_run(args)
     elif args.command == "analyze":
@@ -267,7 +180,7 @@ def main(argv=None) -> int:
     elif args.command == "rejudge":
         from netexplainer.evaluation.rejudge import rejudge
 
-        n = rejudge(args.results, args.output, _build_judge(args), args.max_attempts)
+        n = rejudge(args.results, args.output, build_judge(args), args.max_attempts)
         print(f"Wrote {n} records to {args.output}")
     elif args.command == "convert-log":
         return cmd_convert_log(args)

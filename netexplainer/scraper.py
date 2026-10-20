@@ -208,16 +208,22 @@ class Scraper:
         except subprocess.CalledProcessError as e:
             logger.error(f"Error converting {file_path} to .pcap: {str(e)}")
 
-    def clean_raw_data(self, max_packets: int, data_path: str = DATASET_PATH) -> None:
+    def clean_raw_data(
+        self,
+        max_packets: int,
+        data_path: str = DATASET_PATH,
+        cleaned_path: str | None = None,
+    ) -> None:
         """
         Clean the raw data by filtering out files that are not in the correct format.
 
         Args:
             max_packets (int): The maximum number of packets allowed in a capture file.
             data_path (str): The path to the raw data directory.
+            cleaned_path (str): Destination directory (created if missing).
         """
         logger.debug("Cleaning raw data")
-        cleaned_path = CLEANED_PATH
+        cleaned_path = cleaned_path or CLEANED_PATH
         try:
             if os.path.exists(cleaned_path) and os.listdir(cleaned_path):
                 logger.info(

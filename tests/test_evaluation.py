@@ -169,22 +169,25 @@ def test_make_record_derived_fields():
 
 def test_conditions():
     assert conditions(["decomp", "decomp_tools"], [False]) == [
-        ("decomp", False),
-        ("decomp", True),
+        ("decomp", "none"),
+        ("decomp", "callable"),
     ]
     assert conditions(["direct"], [False, True]) == [
-        ("direct", False),
-        ("direct", True),
+        ("direct", "none"),
+        ("direct", "callable"),
     ]
+    assert conditions(["react"], ["declared"]) == [("react", "declared")]
 
 
 class FakeDataset:
-    def __init__(self, path, questions_path, context):
+    def __init__(self, path, questions_path, context, question_set="core"):
         self.processed_file = path.replace(".pcap", ".txt")
         with open(self.processed_file, "w") as f:
             f.write("No.|Time\n1 | 0.0\n")
         self.questions_subquestions = {q: ["ref sub"] for q in QUESTIONS}
         self.questions_answers = {q: 1 for q in QUESTIONS}
+        self.question_indexes = {q: i for i, q in enumerate(QUESTIONS, start=1)}
+        self.n_packets = 1
 
 
 def _llm_responder(messages):
@@ -334,7 +337,7 @@ def test_cli_run_builds_config(tmp_path, monkeypatch):
     cfg = seen["cfg"]
     assert cfg.models == ["phi4", "my-model"] and cfg.backend == "openai"
     assert cfg.strategies == ["decomp", "mixed"] and cfg.direct_questions == (1, 4)
-    assert cfg.tools == [False, True] and cfg.resume and cfg.max_files == 3
+    assert cfg.tools == ["none", "callable"] and cfg.resume and cfg.max_files == 3
     assert (cfg.params.temperature, cfg.params.seed, cfg.params.top_p) == (0.0, 7, None)
     assert cfg.output == tmp_path / "res" / "results.jsonl"
     assert seen["judge"].name == "gemma-3-27b-it"
