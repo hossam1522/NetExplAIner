@@ -14,7 +14,15 @@ For a question `q` about a trace `T` (rendered as text with `tshark`):
 3. **Aggregation `g`**: the final answer is synthesized from the question and the pairs only, without the trace: `a = g(q, {(q_i, a_i)})` (prompt `AGGREGATION`, `Pipeline.aggregate` in `netexplainer/llm/pipeline.py`; called `get_final_answer` in earlier versions). The pairs are formatted as `Question i: q_i / Answer i: a_i`.
 4. **Judge**: an LLM judge (Gemma 3 27B by default, temperature 0) says whether `a` is almost correct compared with the ground truth computed with scapy (`YES`/`NO`), and scores the similarity (0-100) between the generated and the reference sub-questions of `questions.yaml`.
 
-With **tools**, the calculator (`numexpr`) is bound to every LLM call and the model may call it any number of times before answering.
+With **tools**, the calculator (`numexpr`) is bound to every LLM call and the model may call it before answering (at most 10 rounds per call). Tool modes (`tool_mode` in the results), to separate the effect of the tool from the effect of its definition in the prompt:
+
+| Mode | Flag | Behaviour |
+|---|---|---|
+| `none` | (default) | no tools |
+| `callable` | `--tools` | calculator declared and executed |
+| `declared` | `--tools-declared-not-callable` | calculator declared (definition bound to the request; described in the ReAct prompt) but never executed: a call gets the constant message `Error: the tool is not available. Answer without using tools.` and is counted in `tool_calls` and `tool_calls_blocked` |
+
+`--tool-ablation` runs `none` and `callable` in the same file; use separate runs (`scripts/run_campaign.sh`) for the three-way ablation. Conditions are labelled `strategy`, `strategy+tools`, `strategy+declared`.
 
 All prompts live in `netexplainer/llm/prompts.py`; a test checks that the ones used in the paper are unchanged.
 
@@ -26,8 +34,8 @@ All prompts live in `netexplainer/llm/prompts.py`; a test checks that the ones u
 | `decomp` | full decomposition: steps 1-3 for every question |
 | `decomp_tools` | `decomp` with the calculator tool (same as `decomp --tools`) |
 | `mixed` | decomposition gated per question: questions in `--direct-questions` (default `1,2,4`: total packets, unique communicators, total bytes) are answered directly, the rest are decomposed. Best configuration of the paper |
-| `cot` | chain-of-thought baseline (new, not in the paper): direct answer asking to think step by step |
-| `react` | placeholder, not implemented |
+| `cot` | zero-shot chain of thought (new, not in the paper): the same question plus "Let's think step by step", ONE call, no expert decomposition (prompt `COT`) |
+| `react` | ReAct baseline (new): Thought / Action / Observation loop over the full trace, text-based (`Action: calculator[expr]`), at most `--react-max-steps` calls (default 8; if none gives a `Final Answer` one last call forces it). Every call, token and tool call is recorded; the steps go to `react_steps` |
 
 ## Installation
 
@@ -56,7 +64,26 @@ Optional plots: `uv sync --extra plots`.
 
 `download-data` fetches exactly the files of `urls.txt` and verifies each one against the SHA-256 in `hashes.txt` (files that do not match are deleted and reported; `--no-verify` skips the check, `--scrape` scrapes the current wiki instead, which is not reproducible). Downloads are retried with backoff (the host answers 429 under load, so expect it to take about an hour) and resumed if interrupted. `.cap` files are converted to `.pcap` after verification.
 
-Questions, reference sub-questions and the default models are in `netexplainer/data/questions.yaml`. A new question also needs its ground truth in `Dataset.__answer_question` (`netexplainer/dataset.py`).
+Questions, reference sub-questions and the default models are in `netexplainer/data/questions.yaml`. A new question also needs its ground truth in `netexplainer/ground_truth.py` (`core_answer` or the `EXTENDED` table).
+
+`make clean-data N=<N>` keeps traces with at most `N` packets in `data/cleaned`; for the scale study use another directory per `N`: `python -m netexplainer clean-data 512 --cleaned-dir netexplainer/data/cleaned512` and then `run --data-dir netexplainer/data/cleaned512 --max-packets 256 --num-ctx 32768` (`--max-packets`/`--min-packets` filter a directory by packet count, e.g. 256 vs 512; the registry `num_ctx` is overridden by `--num-ctx`; each record stores `n_packets`).
+
+### Question sets (`--question-set core|extended|all`)
+
+`core` are the 9 questions of the paper (default). `extended` are Q10-Q15 (`extended_questions` in the YAML), whose ground truth is computed deterministically with scapy in `netexplainer/ground_truth.py`; indexes 10-15 are kept in every set (so `--direct-questions` and routing work unchanged):
+
+| Q | Question | Ground truth |
+|---|---|---|
+| 10 | TCP/UDP destination port receiving the most packets | port (ties: `p1 or p2`, numeric order) |
+| 11 | distinct source IPs sending TCP SYN without ACK | integer |
+| 12 | DNS queries (UDP port 53, `qr=0`) | integer; skipped for traces without DNS |
+| 13 | IP sending the most bytes (frame length, as tshark shows it) | IP (ties: sorted, ` or `) |
+| 14 | host sending to more than 10 distinct TCP/UDP destination ports (scan indicator), multi-hop | sorted IP(s) joined by ` or `, or `none` |
+| 15 | TCP packets with RST set | integer; skipped for traces without TCP |
+
+Questions that do not apply to a trace (11, 12, 15 without TCP/DNS) are skipped for it. Extended questions need the Info column (ports, flags), i.e. models with `context="big"` (every alias except `llama2-7b` and `aya-expanse-8b`).
+
+**How numbers and IPs are judged.** The judge prompt of the paper is kept verbatim (`JUDGE_ANSWER`): the judge LLM receives the generated answer and the reference (`str()` of the ground truth) and says whether the answer is "almost correct". There is no numeric tolerance in code: integers (counts, ports) are compared by value, IPs as exact strings, ties as the set of IPs/ports, `none` as the literal absence. Averages and durations (Q5, Q7-Q9) are floats with full precision, so correctness of rounding is left to the judge ("almost correct"); this is a known limitation, quantify it with a second judge (`analyze --second-judge`, per-question agreement and Cohen's kappa) and report it.
 
 ## Running
 
@@ -91,6 +118,14 @@ uv run python -m netexplainer run --models phi4 --strategy mixed --judge-backend
 uv run python -m netexplainer rejudge results/a/results.jsonl -o results/a/judged.jsonl \
     --judge-backend ollama --judge-model gemma3:27b
 
+# Judge locally with Ollama (gemma3:27b), long CoT/ReAct answers need a larger judge context
+uv run python -m netexplainer run --models phi4-q4 --strategy react --tools --question-set all \
+    --base-url http://localhost:11437 --judge-backend ollama --judge-model gemma3:27b \
+    --judge-base-url http://localhost:11438 --judge-num-ctx 8192
+
+# Tool ablation of the prompt effect (declared in the prompt, never callable)
+uv run python -m netexplainer run --models cogito-8b --strategy direct --tools-declared-not-callable
+
 # Quick test on 3 traces, resuming an interrupted run
 uv run python -m netexplainer run --models phi4 --max-files 3 --output-dir results/test --resume
 ```
@@ -117,7 +152,9 @@ Each question is retried up to `--max-attempts` (default 10) times until the pip
 | `judge_model`, `judge_raw`, `verdict`, `correct` | judge output, normalized `YES`/`NO`/`PROBLEM`, `true`/`false`/`null` |
 | `subq_similarity_raw`, `subq_similarity` | judge similarity of the sub-questions (0-100, `null` if not decomposed) |
 | `attempts`, `errors` | attempts used and error messages of failed attempts |
-| `llm_calls`, `tokens_in`, `tokens_out`, `latency_s`, `tool_calls` | usage of the last attempt (tokens as reported by the backend) |
+| `tool_mode`, `n_packets` | `none`/`callable`/`declared` (`tools` is true only for `callable`) and packets of the trace |
+| `react_steps` | Thought/Action/Observation steps of `react` (`null` otherwise) |
+| `llm_calls`, `tokens_in`, `tokens_out`, `latency_s`, `tool_calls`, `tool_calls_blocked` | usage of the last attempt (tokens as reported by the backend; `tool_calls_blocked` = calls refused in `declared` mode) |
 | `seed`, `generation_params` | generation parameters actually sent (`null` = backend default) |
 
 ## Analysis
@@ -133,7 +170,38 @@ It prints (markdown, or `--json`):
 - mean sub-question similarity of decomposed questions;
 - exact McNemar tests between every pair of conditions of the same model, paired on (trace, question).
 
+Besides, `analyze` prints (`--latex` for booktabs tabulars, `--json`):
+
+- `accuracy_clustered`: accuracy per model x condition with the Wilson CI and a percentile bootstrap CI that resamples whole traces (`--bootstrap B`, default 1000, `--seed`), since the questions of a trace are not independent;
+- `mcnemar_vs_<baseline>_holm`: exact McNemar of every condition against `--baseline` (default `direct`), paired on (trace, question), Holm-corrected over all comparisons;
+- `efficiency`: mean LLM calls, tokens in/out, latency and tool calls per condition;
+- `judge_agreement` with `--second-judge other.jsonl` (same answers re-judged with `rejudge`): agreement and Cohen's kappa per question.
+
 `--plots DIR` writes the pie, bar and radar charts of the paper (needs the `plots` extra).
+
+### Routing without leakage (`scripts/routing.py`)
+
+Derives the `mixed` policy from `direct` and `decomp` results of the same traces and questions without reusing the evaluation traces (no new LLM calls: mixed answers are taken from the generated ones):
+
+```bash
+uv run python scripts/routing.py results/*/results.jsonl --split results/split.json --model phi4-q4
+```
+
+1. Deterministic split of the traces into validation 30% / test 70% (`--val-frac`, `--seed`), stratified by number of packets (quartiles); saved in `--split` and reused if it exists.
+2. Policy from validation only, per question and per task type (Temporal / Aggregation / Enumeration / Logic&Retrieval, our classification in `TASK_TYPES`, override with `--task-types`): decompose if `ΔAcc = acc(decomp) - acc(direct) > 0` and the lower end of the trace-bootstrap 95% CI of `ΔAcc` is `>= 0` (`--strict`: `> 0`); otherwise `direct`.
+3. Test accuracy of `direct`, `decomp`, `mixed_paper` (`--paper-direct`), `mixed_per_question`, `mixed_per_type`, `mixed_loqo` (leave-one-question-out: the policy of the held-out question is the per-type policy derived from the validation items of the other questions of its type; `direct` if none) and `oracle` (best strategy per question on the test set itself, an optimistic bound), with Wilson and trace-bootstrap CIs and paired exact McNemar versus `direct` and `decomp`.
+
+### Campaign
+
+`scripts/run_campaign.sh` runs a models x strategies x tool modes x question sets matrix, one `netexplainer run --resume` per cell in `results/<model>__<strategy>__<tools>__<qset>/results.jsonl` (`.done` marker per finished cell, retries, per-cell log). Ollama for generation on `:11437` and judge on the port you give:
+
+```bash
+MODELS="phi4-q4 cogito-8b" STRATEGIES="direct decomp mixed cot react" TOOLS="none callable declared" \
+QSETS="core extended" GEN_URL=http://localhost:11437 JUDGE_URL=http://localhost:11438 \
+EXTRA="--max-packets 512 --num-ctx 32768" scripts/run_campaign.sh --tmux
+```
+
+With `JUDGE_URL=` (empty) the cells are generated without judge; judge them afterwards with `netexplainer rejudge`. After a cut, launch the same command again.
 
 ### Re-analyzing the original logs
 
@@ -159,12 +227,15 @@ Code layout:
 
 ```
 netexplainer/
-  cli.py            command line (run, analyze, convert-log, download-data, clean-data)
+  cli.py, cli_run.py  command line (run, rejudge, analyze, convert-log, download-data, clean-data)
   dataset.py        pcap -> text with tshark, ground truth with scapy
   scraper.py        Wireshark wiki download and filtering
+  ground_truth.py   scapy ground truth of the core and extended questions
   llm/              prompts, backends, model registry, tools, LLM client, strategies
-  evaluation/       experiment runner, judge, JSONL records, metrics, analysis, plots
+  evaluation/       runner, judge, JSONL records, metrics, stats, routing, analysis, plots
 scripts/analyze.py  wrapper of `netexplainer analyze`
+scripts/routing.py  leakage-free routing protocol
+scripts/run_campaign.sh  experiment matrix with --resume (tmux)
 ```
 
 ## License
